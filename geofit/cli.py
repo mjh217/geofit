@@ -288,7 +288,7 @@ def invert(argv):
 
     # Geotherm of every posterior sample
     geotherms = np.empty(samples.shape[0], dtype=object)
-    z_mbl = np.empty(samples.shape[0])
+    z_lab = np.empty(samples.shape[0])
     for i, sample in enumerate(samples):
         shf, z_crust, h_crust, h_mantle, tp = unpack(sample, args)
         if tp is not None:
@@ -296,11 +296,11 @@ def invert(argv):
         geotherms[i], z = output.geotherm_table(
             crust_model, mantle_model, g, z_crust, h_crust, h_mantle, shf, adiabat, args.alphaD
         )
-        z_mbl[i] = z / 1e3
+        z_lab[i] = z / 1e3
 
     converted = np.column_stack([convert(samples[:, j]) for j, (_, convert) in enumerate(columns)])
     posterior = pd.DataFrame(
-        np.column_stack((log_prob, converted, z_mbl)), columns=["Log probability", *names, "LAB depth (km)"]
+        np.column_stack((log_prob, converted, z_lab)), columns=["Log probability", *names, "LAB depth (km)"]
     )
     posterior.to_csv(out / f"{stem}_posterior.csv")
     np.savez_compressed(out / f"{stem}_geotherm", geotherm=geotherms)
@@ -332,7 +332,7 @@ def forward_geotherm(argv):
     crust_model, mantle_model, g = build_models(args)
     adiabat = forward.compute_adiabat(mantle_model, g, args.Tp, d.P_SURFACE, d.Z_MAX_ADIABAT)
     try:
-        table, z_mbl = output.geotherm_table(
+        table, z_lab = output.geotherm_table(
             crust_model, mantle_model, g, args.zcrust * 1e3, args.hcrust, args.Hmantle, args.surfaceheatflux,
             adiabat, args.alphaD,
         )
@@ -344,7 +344,7 @@ def forward_geotherm(argv):
         sys.exit(f"No geotherm: it does not reach the adiabat above {d.Z_MAX / 1e3:.0f} km")
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     table.to_csv(args.output)
-    print(f"LAB depth {z_mbl / 1e3:.1f} km; wrote {args.output}")
+    print(f"Thermal LAB depth {z_lab / 1e3:.1f} km; wrote {args.output}")
     return 0
 
 

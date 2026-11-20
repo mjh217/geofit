@@ -27,12 +27,12 @@ DATA_UNCERTAINTY = "P error on datapoints (Pa)"
 
 
 def geotherm_table(crust_model, mantle_model, g, z_crust, h_crust, h_mantle, surface_heat_flux, adiabat, alphaD):
-    """A geotherm with its thermal properties, and the depth of the MBL [m].
+    """A geotherm with its thermal properties, and the depth of the thermal LAB [m].
 
     z_crust is in m. The table is every km (plus the smoothed corner), in the units of
     GEOTHERM_COLUMNS; properties are from the crustal model above z_crust and the mantle model below.
     """
-    z, T, P, z_mbl = forward.compute_geotherm(
+    z, T, P, z_lab = forward.compute_geotherm(
         crust_model, mantle_model, g, z_crust, Z_MAX, h_crust, h_mantle, surface_heat_flux, adiabat, alphaD
     )
     in_crust = z < z_crust
@@ -41,4 +41,4 @@ def geotherm_table(crust_model, mantle_model, g, z_crust, h_crust, h_mantle, sur
         for crust, mantle in zip(crust_model.compute(z, P, T), mantle_model.compute(z, P, T))
     ]
     columns = [z / 1e3, P / 1e9, T - C2K, adiabat.T(P) - C2K, *properties]
-    return pd.DataFrame(np.column_stack(columns), columns=GEOTHERM_COLUMNS), z_mbl
+    return pd.DataFrame(np.column_stack(columns), columns=GEOTHERM_COLUMNS), z_lab

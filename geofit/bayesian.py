@@ -48,7 +48,7 @@ def make_likelihood(crust_model, mantle_model, g, z_max, alphaD, adiabat, h_mant
             return -np.inf
 
         try:
-            Z, T, P, z_mbl = forward.compute_geotherm(
+            Z, T, P, z_lab = forward.compute_geotherm(
                 crust_model, mantle_model, g, z_crust, z_max, h_crust, h_mantle, surface_heat_flux, adiabat, alphaD
             )
         except (

@@ -33,7 +33,7 @@ def test_adiabat(adiabat):
 
 def test_geotherm(adiabat):
     q0, zc, h = 0.06, 35e3, 1e-6
-    z, T, P, z_mbl = forward.compute_geotherm(
+    z, T, P, z_lab = forward.compute_geotherm(
         CRUST, MANTLE, forward.gravity_constant, zc, Z_MAX, h, 0.0, q0, adiabat, alphaD=0.0
     )
     assert np.all(np.diff(z) > 0) and z[-1] == Z_MAX
@@ -50,23 +50,23 @@ def test_geotherm(adiabat):
         return np.where(z <= zc, P_SURFACE + RHO_C * G * z, P_moho + RHO_M * G * (z - zc))
 
     z_exact = brentq(lambda z: T_exact(z) - adiabat_T(P_exact(z)), zc, Z_MAX)
-    assert z_mbl == pytest.approx(z_exact, abs=100.0)
+    assert z_lab == pytest.approx(z_exact, abs=100.0)
 
-    above = z <= z_mbl
+    above = z <= z_lab
     assert T[above] == pytest.approx(T_exact(z[above]), abs=0.01)
-    assert P == pytest.approx(P_exact(np.minimum(z, z_mbl)) + RHO_M * G * np.maximum(z - z_mbl, 0), rel=1e-6)
-    # Below the MBL the profile follows the adiabat
+    assert P == pytest.approx(P_exact(np.minimum(z, z_lab)) + RHO_M * G * np.maximum(z - z_lab, 0), rel=1e-6)
+    # Below the thermal LAB the profile follows the adiabat
     assert T[~above] == pytest.approx(adiabat_T(P[~above]), abs=0.1)
 
 
 def test_smoothed_corner(adiabat):
     args = (CRUST, MANTLE, forward.gravity_constant, 35e3, Z_MAX, 1e-6, 0.0, 0.06, adiabat)
-    z0, T0, P0, z_mbl = forward.compute_geotherm(*args, alphaD=0.0)
-    z, T, P, z_mbl_smooth = forward.compute_geotherm(*args, alphaD=0.2)
-    assert z_mbl_smooth == z_mbl
+    z0, T0, P0, z_lab = forward.compute_geotherm(*args, alphaD=0.0)
+    z, T, P, z_lab_smooth = forward.compute_geotherm(*args, alphaD=0.2)
+    assert z_lab_smooth == z_lab
     assert np.all(np.diff(z) > 0)
-    # Unchanged outside the window of width 0.2 z_mbl centred on z_mbl
-    outside = np.abs(z - z_mbl) > 0.1 * z_mbl + 1.0  # (the window ends are new points)
+    # Unchanged outside the window of width 0.2 z_lab centred on z_lab
+    outside = np.abs(z - z_lab) > 0.1 * z_lab + 1.0  # (the window ends are new points)
     assert np.isin(z[outside], z0).all()
     assert T[outside] == pytest.approx(np.interp(z[outside], z0, T0))
     # The smoothed temperature lies below the sharp corner

@@ -1,9 +1,9 @@
 """Forward model: the mantle adiabat and a conductive geotherm for given parameters.
 
 The geotherm is integrated downwards from the surface, through the crust and then the mantle,
-until it meets the adiabat at the base of the mechanical boundary layer (MBL), i.e. the mechanical
-lithosphere-asthenosphere boundary. Below that it follows the adiabat. Depths are in m, pressures
-in Pa, temperatures in K and heat flux in W/m^2.
+until it meets the adiabat, at the thermal lithosphere-asthenosphere boundary (LAB) of Hoggard et
+al. (2026). Below that it follows the adiabat, with the corner rounded across a thermal boundary
+layer. Depths are in m, pressures in Pa, temperatures in K and heat flux in W/m^2.
 """
 
 import numpy as np
@@ -93,18 +93,18 @@ def compute_adiabat(model, g, tp, P0, z_max):
     return Adiabat(sol.t, sol.y[0], sol.y[1])
 
 
-def smooth_corner(z, T, P, z_mbl, width, npoints=16):
+def smooth_corner(z, T, P, z_lab, width, npoints=16):
     """Round the corner where the geotherm meets the adiabat.
 
-    Temperature over a window of the given width centred on z_mbl is replaced by a cubic spline
+    Temperature over a window of the given width centred on z_lab is replaced by a cubic spline
     through the profile either side, so that T is smooth in z. P is interpolated linearly at the
     new points. If the window extends below the profile, the last segment is extrapolated.
     """
     if width <= 0.0:
         return z, T, P
 
-    z_top = z_mbl - width / 2.0
-    z_bot = z_mbl + width / 2.0
+    z_top = z_lab - width / 2.0
+    z_bot = z_lab + width / 2.0
     beyond_profile = z_bot > z[-1]
     if beyond_profile:
         T_top = np.interp([z_top], z, T)[0]
@@ -143,16 +143,16 @@ def smooth_corner(z, T, P, z_mbl, width, npoints=16):
 def compute_geotherm(
     crust_model, mantle_model, g, z_crust, z_max, h_crust, h_mantle, surface_heat_flux, adiabat, alphaD=0.0
 ):
-    """Conductive geotherm for the given parameters, joined to the adiabat below the MBL.
+    """Conductive geotherm for the given parameters, joined to the adiabat below the thermal LAB.
 
     Integrates steady-state conduction, d/dz (k dT/dz) + H = 0 (Hoggard et al., 2026, eq. 1), as
     dT/dz = q / k and dq/dz = -H, with dP/dz = rho g (eq. 4), downwards from the surface (T = 0 C,
     P = 1 atm, q = surface_heat_flux): first through the crust (thickness z_crust, heat production
     h_crust [W/m^3]), then through the mantle (heat production h_mantle) until T reaches the
-    adiabat at depth z_mbl. Below that the profile follows the adiabat down to z_max. If alphaD > 0,
-    the corner at z_mbl is smoothed over a width of alphaD * z_mbl (the thermal boundary layer).
+    adiabat at depth z_lab. Below that the profile follows the adiabat down to z_max. If alphaD > 0,
+    the corner at z_lab is smoothed over a thermal boundary layer of thickness alphaD * z_lab.
 
-    Returns depth, temperature and pressure every km, and z_mbl. Raises AdiabatInCrustError if T
+    Returns depth, temperature and pressure every km, and z_lab. Raises AdiabatInCrustError if T
     reaches the adiabat within the crust, NegativeFluxError if the heat flux reaches zero first, and
     NoAdiabatError if the adiabat is not reached above z_max.
     """
@@ -210,7 +210,7 @@ def compute_geotherm(
     if sol_mantle.t_events[1].size != 1:
         raise IntegrationError(f"Unexpected events: {sol_mantle.t_events}")
 
-    z_mbl = sol_mantle.t[-1]
+    z_lab = sol_mantle.t[-1]
 
     # Sample the crust and mantle solutions every km (each integration's end point is dropped as
     # it duplicates the next start), then add the adiabat below
@@ -225,6 +225,6 @@ def compute_geotherm(
     P = np.concatenate((sol_crust.sol(z_c)[1], sol_mantle.sol(z_m)[1], P_a))
 
     if alphaD > 0.0:
-        z, T, P = smooth_corner(z, T, P, z_mbl, alphaD * z_mbl)
+        z, T, P = smooth_corner(z, T, P, z_lab, alphaD * z_lab)
 
-    return z, T, P, z_mbl
+    return z, T, P, z_lab
