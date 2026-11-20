@@ -165,10 +165,7 @@ def prior_summary(args):
     rows = {
         output.SURFACE_HEAT_FLUX: [args.surfaceheatfluxmin * 1e3, args.surfaceheatfluxmax * 1e3],
         output.CRUSTAL_THICKNESS: [args.zcrustmean, args.zcruststd],
-        output.CRUSTAL_HEATING: [
-            1e6 * args.hcrustmean,
-            1e6 * (args.hcrustmean - 10 ** (np.log10(args.hcrustmean) - args.hcruststd)),
-        ],
+        output.CRUSTAL_HEATING: [1e6 * args.hcrustmean, 1e6 * args.hcruststd],
     }
     if args.invertHmantle:
         rows[output.MANTLE_HEATING] = [1e6 * args.Hmantlemean, 1e6 * args.Hmantlestd]
