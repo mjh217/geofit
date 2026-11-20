@@ -20,9 +20,15 @@ from .materials import MODELS, make_model
 def add_model_options(parser):
     """Options shared by the inversion and the forward model."""
     models = parser.add_argument_group("thermal models")
-    models.add_argument("--crust", default="Constant", help=f"crustal model: {', '.join(MODELS)} (default: %(default)s)")
-    models.add_argument("--mantle", default="Constant", help=f"mantle model: {', '.join(MODELS)} (default: %(default)s)")
-    models.add_argument("--approxg", action="store_true", help="let gravity vary with depth (default: constant 9.81 m/s^2)")
+    models.add_argument(
+        "--crust", default="Constant", help=f"crustal model: {', '.join(MODELS)} (default: %(default)s)",
+    )
+    models.add_argument(
+        "--mantle", default="Constant", help=f"mantle model: {', '.join(MODELS)} (default: %(default)s)",
+    )
+    models.add_argument(
+        "--approxg", action="store_true", help="let gravity vary with depth (default: constant 9.81 m/s^2)",
+    )
     models.add_argument(
         "--alphaD",
         type=float,
@@ -37,7 +43,9 @@ def add_model_options(parser):
     constants.add_argument("--crust-cp", type=float, default=d.CP_CRUST, help="crustal heat capacity [J/kg/K]")
     constants.add_argument("--crust-cond", type=float, default=d.K_CRUST, help="crustal conductivity [W/m/K]")
     constants.add_argument("--mantle-rho", type=float, default=d.RHO_MANTLE, help="mantle density [kg/m^3]")
-    constants.add_argument("--mantle-alpha", type=float, default=d.ALPHA_MANTLE, help="mantle thermal expansivity [1/K]")
+    constants.add_argument(
+        "--mantle-alpha", type=float, default=d.ALPHA_MANTLE, help="mantle thermal expansivity [1/K]",
+    )
     constants.add_argument("--mantle-cp", type=float, default=d.CP_MANTLE, help="mantle heat capacity [J/kg/K]")
     constants.add_argument("--mantle-cond", type=float, default=d.K_MANTLE, help="mantle conductivity [W/m/K]")
 
@@ -60,7 +68,10 @@ def add_mantle_options(parser, note=""):
         "--Tp", type=float, default=d.TP, help=f"mantle potential temperature [K]{note} (default: %(default)s)"
     )
     parser.add_argument(
-        "--Hmantle", type=float, default=0.0, help=f"lithospheric mantle heat production [W/m^3]{note} (default: %(default)s)"
+        "--Hmantle",
+        type=float,
+        default=0.0,
+        help=f"lithospheric mantle heat production [W/m^3]{note} (default: %(default)s)",
     )
 
 
@@ -85,7 +96,9 @@ def inversion_parser():
         description="Bayesian inversion of P-T constraints for steady-state geotherms. "
         "Use 'geofit forward -h' for a single forward geotherm.",
     )
-    parser.add_argument("input", help="P-T constraints CSV: temperature [C] and pressure [GPa] in the first two columns")
+    parser.add_argument(
+        "input", help="P-T constraints CSV: temperature [C] and pressure [GPa] in the first two columns",
+    )
     parser.add_argument("--output-dir", default="output", help="directory for the results (default: %(default)s)")
     parser.add_argument("--seed", type=int, help="random seed, for reproducible runs")
     parser.add_argument("--samplepriors", action="store_true", help="also write random samples of the priors")
@@ -94,7 +107,10 @@ def inversion_parser():
     fixed = parser.add_argument_group("fixed values of parameters that can be inverted for")
     add_mantle_options(fixed, note=", unless --invertTp/--invertHmantle")
     fixed.add_argument(
-        "--sigma", type=float, default=3e8, help="uncertainty of the data pressures [Pa], unless --hierarchical (default: %(default)s)"
+        "--sigma",
+        type=float,
+        default=3e8,
+        help="uncertainty of the data pressures [Pa], unless --hierarchical (default: %(default)s)",
     )
 
     optional = parser.add_argument_group("optional parameters to invert for")
@@ -103,20 +119,38 @@ def inversion_parser():
     optional.add_argument("--hierarchical", action="store_true", help="invert for the data uncertainty sigma")
 
     priors = parser.add_argument_group("priors")
-    priors.add_argument("--surfaceheatfluxmin", type=float, default=0.01, help="surface heat flux minimum [W/m^2] (uniform prior)")
+    priors.add_argument(
+        "--surfaceheatfluxmin", type=float, default=0.01, help="surface heat flux minimum [W/m^2] (uniform prior)",
+    )
     priors.add_argument("--surfaceheatfluxmax", type=float, default=0.25, help="surface heat flux maximum [W/m^2]")
-    priors.add_argument("--zcrustmean", type=float, default=30.0, help="crustal thickness mean [km] (truncated Gaussian prior)")
+    priors.add_argument(
+        "--zcrustmean", type=float, default=30.0, help="crustal thickness mean [km] (truncated Gaussian prior)",
+    )
     priors.add_argument("--zcruststd", type=float, default=3.0, help="crustal thickness standard deviation [km]")
-    priors.add_argument("--zcrusttrunc", type=float, default=2, help="crustal thickness cut-off, in standard deviations from the mean")
-    priors.add_argument("--hcrustmean", type=float, default=1e-6, help="crustal heat production mean [W/m^3] (truncated Gaussian prior)")
-    priors.add_argument("--hcruststd", type=float, default=1.0e-6, help="crustal heat production standard deviation [W/m^3]")
+    priors.add_argument(
+        "--zcrusttrunc", type=float, default=2, help="crustal thickness cut-off, in standard deviations from the mean",
+    )
+    priors.add_argument(
+        "--hcrustmean", type=float, default=1e-6,
+        help="crustal heat production mean [W/m^3] (truncated Gaussian prior)",
+    )
+    priors.add_argument(
+        "--hcruststd", type=float, default=1.0e-6, help="crustal heat production standard deviation [W/m^3]",
+    )
     priors.add_argument("--hcrustmin", type=float, default=0, help="crustal heat production minimum [W/m^3]")
     priors.add_argument("--hcrustmax", type=float, default=10e-6, help="crustal heat production maximum [W/m^3]")
-    priors.add_argument("--Hmantlemean", type=float, default=1e-8, help="mantle heat production mean [W/m^3] (truncated Gaussian prior)")
-    priors.add_argument("--Hmantlestd", type=float, default=1e-8, help="mantle heat production standard deviation [W/m^3]")
+    priors.add_argument(
+        "--Hmantlemean", type=float, default=1e-8,
+        help="mantle heat production mean [W/m^3] (truncated Gaussian prior)",
+    )
+    priors.add_argument(
+        "--Hmantlestd", type=float, default=1e-8, help="mantle heat production standard deviation [W/m^3]",
+    )
     priors.add_argument("--Hmantlemin", type=float, default=0, help="mantle heat production minimum [W/m^3]")
     priors.add_argument("--Hmantlemax", type=float, default=1e-6, help="mantle heat production maximum [W/m^3]")
-    priors.add_argument("--tpmean", type=float, default=d.TP, help="potential temperature mean [K] (truncated Gaussian prior)")
+    priors.add_argument(
+        "--tpmean", type=float, default=d.TP, help="potential temperature mean [K] (truncated Gaussian prior)",
+    )
     priors.add_argument("--tpstd", type=float, default=25.0, help="potential temperature standard deviation [K]")
     priors.add_argument(
         "--tptrunc", "--tptunc", dest="tptrunc", type=float, default=2,
@@ -126,11 +160,17 @@ def inversion_parser():
     priors.add_argument("--sigma-max", type=float, default=1e9, help="data uncertainty maximum [Pa]")
 
     mcmc = parser.add_argument_group("MCMC sampling (emcee)")
-    mcmc.add_argument("--nwalkers", type=int, default=8, help="number of walkers in the main run (default: %(default)s)")
-    mcmc.add_argument("--oversampling", type=int, default=4, help="factor more walkers for the burn-in (default: %(default)s)")
+    mcmc.add_argument(
+        "--nwalkers", type=int, default=8, help="number of walkers in the main run (default: %(default)s)",
+    )
+    mcmc.add_argument(
+        "--oversampling", type=int, default=4, help="factor more walkers for the burn-in (default: %(default)s)",
+    )
     mcmc.add_argument("--burnin", type=int, default=200, help="burn-in steps (default: %(default)s)")
     mcmc.add_argument("--samples", type=int, default=1000, help="steps in the main run (default: %(default)s)")
-    mcmc.add_argument("--priorsamples", type=int, default=1000000, help="random samples for --samplepriors (default: %(default)s)")
+    mcmc.add_argument(
+        "--priorsamples", type=int, default=1000000, help="random samples for --samplepriors (default: %(default)s)",
+    )
     return parser
 
 
@@ -215,7 +255,9 @@ def invert(argv):
     if args.invertHmantle:
         log_likelihood = bayesian.add_mantle_heat_production(log_likelihood)
     if args.invertTp:
-        log_likelihood = bayesian.add_potential_temperature(log_likelihood, mantle_model, g, d.P_SURFACE, d.Z_MAX_ADIABAT)
+        log_likelihood = bayesian.add_potential_temperature(
+            log_likelihood, mantle_model, g, d.P_SURFACE, d.Z_MAX_ADIABAT
+        )
     if args.hierarchical:
         log_likelihood = bayesian.add_data_uncertainty(log_likelihood)
     log_posterior = bayesian.make_log_posterior(priors, log_likelihood)

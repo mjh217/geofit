@@ -30,7 +30,10 @@ class IntegrationError(Exception):
 
 
 def gravity(z):
-    """Gravitational acceleration [m/s^2] at depth z [m]: a quadratic fit to 80 km and linear below, valid to about 400 km."""
+    """Gravitational acceleration [m/s^2] at depth z [m].
+
+    A polynomial fit, quadratic to 80 km and linear below, valid to about 400 km.
+    """
     z_km = np.asarray(z / 1.0e3)
     ratio = np.empty_like(z_km)
     shallow = z_km <= 80.0
@@ -137,7 +140,9 @@ def smooth_corner(z, T, P, z_mbl, width, npoints=16):
     )
 
 
-def compute_geotherm(crust_model, mantle_model, g, z_crust, z_max, h_crust, h_mantle, surface_heat_flux, adiabat, alphaD=0.0):
+def compute_geotherm(
+    crust_model, mantle_model, g, z_crust, z_max, h_crust, h_mantle, surface_heat_flux, adiabat, alphaD=0.0
+):
     """Conductive geotherm for the given parameters, joined to the adiabat below the MBL.
 
     Integrates dT/dz = q / k, dP/dz = rho g and dq/dz = -H downwards from the surface (T = 0 C,
