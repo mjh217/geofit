@@ -16,8 +16,9 @@ from geofit.cli import main
 DATA = Path(__file__).parent / "data"
 
 RUNS = {
-    # The settings of Hoggard et al. (2026)
-    "paper": ["--seed", "11", "--crust", "Whittington", "--mantle", "Hoggard", "--invertTp", "--samplepriors",
+    # The settings of Hoggard et al. (2026); the reference was made with the original options
+    # --crust Whittington --mantle Hoggard --mantle-grain-size 0.3
+    "paper": ["--seed", "11", "--crust", "Hoggard", "--mantle", "Hoggard", "--invertTp", "--samplepriors",
               "--priorsamples", "200"],
     # Other options: Osako mantle, data uncertainty as a parameter, no smoothing at the base
     "osako": ["--seed", "12", "--mantle", "Osako", "--hierarchical", "--alphaD", "0"],

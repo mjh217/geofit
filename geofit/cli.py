@@ -49,7 +49,7 @@ def add_model_options(parser):
     constants.add_argument("--mantle-cp", type=float, default=d.CP_MANTLE, help="mantle heat capacity [J/kg/K]")
     constants.add_argument("--mantle-cond", type=float, default=d.K_MANTLE, help="mantle conductivity [W/m/K]")
 
-    hoggard = parser.add_argument_group("Hoggard mantle model")
+    hoggard = parser.add_argument_group("Hoggard mantle model (Hoggard et al., 2026)")
     hoggard.add_argument(
         "--mantle-grain-size", type=float, default=d.GRAIN_SIZE_MANTLE, help="grain size [cm] (default: %(default)s)"
     )
@@ -76,9 +76,10 @@ def add_mantle_options(parser, note=""):
 
 
 def build_models(args):
-    crust = make_model(args.crust, args.crust_alpha, args.crust_cp, args.crust_rho, args.crust_cond)
+    crust = make_model(args.crust, "crust", args.crust_alpha, args.crust_cp, args.crust_rho, args.crust_cond)
     mantle = make_model(
         args.mantle,
+        "mantle",
         args.mantle_alpha,
         args.mantle_cp,
         args.mantle_rho,

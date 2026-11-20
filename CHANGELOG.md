@@ -15,6 +15,9 @@ not change the posterior).
 - `--invertHmantle` works, with a truncated Gaussian prior on mantle heat production (`--Hmantlemean`,
   `--Hmantlestd`, `--Hmantlemin`, `--Hmantlemax`).
 - The `Hasterok` crustal conductivity model (Goes et al., 2020) can be selected, with its units corrected.
+- The crustal model `Whittington` is renamed `Hoggard`, so `--crust Hoggard --mantle Hoggard` selects the
+  crustal and mantle models of Hoggard et al. (2026); `--crust Whittington` still works.
+- `--mantle-grain-size` defaults to 0.3 cm (was 0.1 cm), as used by Hoggard et al. (2026).
 - Geotherms that reach the adiabat within the crust are rejected; these models previously produced warnings and
   were never accepted.
 - Fixed: `--approxg` gravity below 80 km; posterior geotherms now use `--Hmantle` when it is not inverted for;

@@ -20,9 +20,9 @@ ALPHA_MANTLE = 3e-5
 CP_MANTLE = 1.187e3
 K_MANTLE = 2.5
 
-# Mantle properties for the Hoggard model
+# Properties for the Hoggard mantle model
 BULK_MODULUS_MANTLE = 130e9  # [Pa]
-GRAIN_SIZE_MANTLE = 0.1  # [cm]
+GRAIN_SIZE_MANTLE = 0.3  # [cm], as used by Hoggard et al. (2026)
 
 # Depth limits
 Z_MAX = 400e3  # deepest point of a geotherm [m]

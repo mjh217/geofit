@@ -124,8 +124,8 @@ def _density(rho0, compression, alpha0, alpha1, ag, P, T):
     return rho0 * compression * (1.0 - alpha_ratio * expansion)
 
 
-class HoggardModel(Model):
-    """Mantle (olivine) properties that depend on temperature and pressure.
+class HoggardMantleModel(Model):
+    """Mantle (olivine) properties that depend on temperature and pressure (Hoggard et al., 2026).
 
     - alpha: forsterite, alpha0 + alpha1 T (Bouhifd et al., 1996, Table 2).
     - cp: Korenaga & Korenaga (2016, eq. 2), with no pressure dependence (very weak over upper-mantle
@@ -139,7 +139,7 @@ class HoggardModel(Model):
       (Grose & Afonso, 2013, eqs. A1-A2, after Hofmeister, 2005).
     """
 
-    def __init__(self, rho=3.3e3, grain_size=0.1, bulk_modulus=130e9):
+    def __init__(self, rho=3.3e3, grain_size=0.3, bulk_modulus=130e9):
         self.rho0 = rho
 
         # Thermal expansivity, alpha = alpha0 + alpha1 T (Bouhifd et al., 1996, Table 2, "this work", 300-2150 K)
@@ -210,8 +210,8 @@ class HoggardModel(Model):
         return alpha * ones, cp * ones, rho * ones, k * ones
 
 
-class WhittingtonModel(Model):
-    """Crustal properties that depend on temperature and pressure.
+class HoggardCrustModel(Model):
+    """Crustal properties that depend on temperature and pressure (Hoggard et al., 2026).
 
     - alpha: alpha0 + alpha1 T (Stephenson et al., 2024, eq. 3 and Table 1).
     - thermal diffusivity and cp of average crust: Whittington et al. (2009, eqs. 1-4), with a change
@@ -227,7 +227,7 @@ class WhittingtonModel(Model):
         self.alpha0 = 1.0e-5
         self.alpha1 = 2.9e-8
 
-        # Anderson-Gruneisen parameter
+        # Anderson-Gruneisen parameter delta_T, as for the mantle (Grose & Afonso, 2013, para. 11)
         self.ag = 6.0
 
     def kappa(self, T):
@@ -267,15 +267,17 @@ class WhittingtonModel(Model):
         return alpha * ones, cp * ones, rho * ones, k * ones
 
 
-MODELS = ("constant", "osako", "hasterok", "hoggard", "whittington")
+MODELS = ("constant", "osako", "hasterok", "hoggard")
 
 
-def make_model(name, alpha, cp, rho, k, **kwargs):
-    """Build a model by name (case-insensitive).
+def make_model(name, layer, alpha, cp, rho, k, **kwargs):
+    """Build a model by name (case-insensitive) for layer "crust" or "mantle".
 
     alpha, cp, rho and k are the constant values, used where the model does not compute them (for
-    the Hasterok model, k is the room-temperature conductivity k0).
-    kwargs (grain_size, bulk_modulus) are passed to the Hoggard model.
+    the Hasterok model, k is the room-temperature conductivity k0). "hoggard" gives the crustal or
+    mantle model of Hoggard et al. (2026), depending on the layer; kwargs (grain_size,
+    bulk_modulus) are passed to the mantle version. "whittington" is accepted for the crustal
+    version, its earlier name.
     """
     name = name.lower()
     if name == "constant":
@@ -284,8 +286,8 @@ def make_model(name, alpha, cp, rho, k, **kwargs):
         return OsakoModel(alpha, cp, rho)
     if name == "hasterok":
         return HasterokModel(alpha, cp, rho, k)
-    if name == "hoggard":
-        return HoggardModel(rho, **kwargs)
-    if name == "whittington":
-        return WhittingtonModel(rho)
-    raise ValueError(f"Unknown model '{name}' (choose from {', '.join(MODELS)})")
+    if name == "hoggard" and layer == "mantle":
+        return HoggardMantleModel(rho, **kwargs)
+    if name in ("hoggard", "whittington") and layer == "crust":
+        return HoggardCrustModel(rho)
+    raise ValueError(f"Unknown {layer} model '{name}' (choose from {', '.join(MODELS)})")

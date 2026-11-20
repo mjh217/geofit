@@ -7,17 +7,17 @@ from scipy.optimize import brentq
 from geofit.defaults import C2K
 from geofit.materials import (
     HasterokModel,
-    HoggardModel,
+    HoggardMantleModel,
     OsakoModel,
-    WhittingtonModel,
+    HoggardCrustModel,
     compression_crust,
     compression_mantle,
     make_model,
 )
 
 
-def test_whittington():
-    m = WhittingtonModel()
+def test_hoggard_crust():
+    m = HoggardCrustModel()
     # Eqs. 1-4 by hand, for an average crust of 221.78 g/mol
     assert m.kappa(300.0) == pytest.approx((567.3 / 300.0 - 0.062) * 1e-6)
     assert m.kappa(1000.0) == pytest.approx((0.732 - 0.000135 * 1000.0) * 1e-6)
@@ -27,18 +27,18 @@ def test_whittington():
     assert m.cp(np.array([300.0, 1000.0])) == pytest.approx([m.cp(300.0), m.cp(1000.0)])
 
 
-def test_hoggard_heat_capacity_and_expansivity():
-    m = HoggardModel()
+def test_hoggard_mantle_heat_capacity_and_expansivity():
+    m = HoggardMantleModel()
     # Korenaga & Korenaga (2016, eq. 2) and Bouhifd et al. (1996, Table 2)
     assert m.cp(1600.0) == pytest.approx(1580 - 12230 / 40.0 - 1694e6 / 1600.0**3)
     assert m.alpha(1000.0) == pytest.approx(2.832e-5 + 0.758e-8 * 1000.0)
 
 
-def test_hoggard_conductivity_matches_grose_afonso_figure_3():
+def test_hoggard_mantle_conductivity_matches_grose_afonso_figure_3():
     # Fo90 lattice diffusivity at 0 C is about 2.6 mm^2/s
-    assert HoggardModel().kappa_lattice(C2K) == pytest.approx(2.635e-6)
+    assert HoggardMantleModel().kappa_lattice(C2K) == pytest.approx(2.635e-6)
     # For 1 cm grains, radiative conductivity peaks at about 1.6 W/m/K near 1050 C
-    m = HoggardModel(grain_size=1.0)
+    m = HoggardMantleModel(grain_size=1.0)
     T = np.linspace(0, 1500, 1501) + C2K
     k_rad = m.k_radiative(T)
     assert k_rad.max() == pytest.approx(1.62, abs=0.02)
@@ -75,7 +75,7 @@ def test_compression_fits(compression, K0, P_max):
         assert compression(P) == pytest.approx(birch_murnaghan(K0, P), abs=1e-3)
 
 
-@pytest.mark.parametrize("model", [HoggardModel(rho=3300.0), WhittingtonModel(rho=2700.0)])
+@pytest.mark.parametrize("model", [HoggardMantleModel(rho=3300.0), HoggardCrustModel(rho=2700.0)])
 def test_density(model):
     # Surface density at the surface; less dense when hot, denser when compressed
     assert model.rho(101325.0, C2K) == pytest.approx(model.rho0, rel=1e-3)
@@ -84,10 +84,14 @@ def test_density(model):
 
 def test_shapes():
     # Scalars in, scalars out; arrays in, arrays out, including the constant properties
-    for name in ["constant", "osako", "hasterok", "hoggard", "whittington"]:
-        m = make_model(name, 3e-5, 1000.0, 3000.0, 2.5)
+    for name, layer in [("constant", "crust"), ("osako", "mantle"), ("hasterok", "crust"), ("hoggard", "crust"),
+                        ("hoggard", "mantle"), ("whittington", "crust")]:
+        m = make_model(name, layer, 3e-5, 1000.0, 3000.0, 2.5)
         assert all(np.ndim(v) == 0 for v in m.compute(1e3, 1e8, 600.0))
         values = m.compute(np.array([1e3, 2e3]), np.array([1e8, 2e8]), np.array([600.0, 700.0]))
         assert all(np.shape(v) == (2,) for v in values)
+    assert isinstance(make_model("hoggard", "crust", 0, 0, 2700.0, 0), HoggardCrustModel)
+    assert isinstance(make_model("hoggard", "mantle", 0, 0, 3300.0, 0), HoggardMantleModel)
+    assert make_model("hoggard", "mantle", 0, 0, 3300.0, 0).xA == HoggardMantleModel(grain_size=0.3).xA
     with pytest.raises(ValueError):
-        make_model("unknown", 0, 0, 0, 0)
+        make_model("unknown", "crust", 0, 0, 0, 0)

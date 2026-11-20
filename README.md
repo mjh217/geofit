@@ -23,7 +23,7 @@ This needs numpy, scipy, pandas and emcee, and gives the `geofit` command (or ru
 ## Inversion
 
 ```bash
-geofit example_data/brigooda_TP.csv --crust Whittington --mantle Hoggard --invertTp
+geofit example_data/brigooda_TP.csv --crust Hoggard --mantle Hoggard --invertTp
 ```
 
 The input is a CSV with a header row, temperature (°C) in the first column and pressure (GPa) in the second; other columns are ignored. Results are written to `output/` (or `--output-dir`), named after the input file:
@@ -42,7 +42,7 @@ To compute a single geotherm without an inversion:
 
 ```bash
 geofit forward --surfaceheatflux 0.06 --zcrust 35 --hcrust 1e-6 --Tp 1603.15 --Hmantle 0 \
-    --crust Whittington --mantle Hoggard -o geotherm.csv
+    --crust Hoggard --mantle Hoggard -o geotherm.csv
 ```
 
 This writes the same table as the inversion's geotherms and prints the LAB depth. Units are W/m<sup>2</sup>, km, W/m<sup>3</sup> and K.
@@ -55,19 +55,18 @@ Choose with `--crust` and `--mantle`. Where a model does not compute a property,
 |---|---|---|
 | `Constant` | crust or mantle | none |
 | `Hasterok` | crust | k (Goes et al., 2020), with `--crust-cond` as the room-temperature value |
-| `Whittington` | crust | α (Stephenson et al., 2024); k and C<sub>P</sub> (Whittington et al., 2009); ρ (Grose & Afonso, 2013) |
 | `Osako` | mantle | k (Osako et al., 2004) |
-| `Hoggard` | mantle | α (Bouhifd et al., 1996); C<sub>P</sub> and lattice k (Korenaga & Korenaga, 2016); radiative k for grain size `--mantle-grain-size` and ρ (Grose & Afonso, 2013); pressure dependence of k (Hofmeister, 2007) |
+| `Hoggard` (crust) | crust | α (Stephenson et al., 2024); k and C<sub>P</sub> (Whittington et al., 2009); ρ (Grose & Afonso, 2013) |
+| `Hoggard` (mantle) | mantle | α (Bouhifd et al., 1996); C<sub>P</sub> and lattice k (Korenaga & Korenaga, 2016); radiative k for grain size `--mantle-grain-size` (default 0.3 cm) and ρ (Grose & Afonso, 2013); pressure dependence of k (Hofmeister, 2007) |
 
-`geofit/materials.py` gives the equations used and their sources.
+The `Hoggard` crust and mantle models are the combinations used by Hoggard et al. (2026). `geofit/materials.py` gives the equations used and their sources.
 
 ## Reproducing Hoggard et al. (2026)
 
 For each site, Hoggard et al. (2026) ran
 
 ```bash
-geofit SITE_TP.csv --crust Whittington --mantle Hoggard --mantle-grain-size 0.3 --invertTp --samplepriors \
-    --zcrustmean 30
+geofit SITE_TP.csv --crust Hoggard --mantle Hoggard --invertTp --samplepriors --zcrustmean 30
 ```
 
 with `--zcrustmean 30` in Phanerozoic regions and `--zcrustmean 40` in cratonic and craton-adjacent regions. The other priors are the defaults.

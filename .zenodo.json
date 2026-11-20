@@ -3,13 +3,42 @@
   "upload_type": "software",
   "description": "<p>GeoFit estimates steady-state continental geotherms from pressure-temperature constraints, such as thermobarometry of mantle xenoliths and xenocrysts. Each geotherm is found by integrating 1-D vertical heat conduction downwards from the surface until it meets the mantle adiabat, with a choice of temperature- and pressure-dependent thermal properties for the crust and mantle. Bayesian inference (MCMC sampling with emcee) gives the posterior distribution of surface heat flux, crustal thickness, crustal heat production and, optionally, mantle potential temperature, mantle heat production and data uncertainty, together with the depth of the lithosphere-asthenosphere boundary.</p><p>This code was developed at the Australian National University as part of Geoscience Australia's <em>Resourcing Australia's Prosperity</em> initiative and accompanies Hoggard et al. (2026), <em>Paleothermal structure of the Australian continental lithosphere</em>, Geochemistry, Geophysics, Geosystems.</p>",
   "creators": [
-    {"name": "Hoggard, Mark J.", "affiliation": "Research School of Earth Sciences, Australian National University", "orcid": "0000-0003-4310-3862"},
-    {"name": "Hawkins, Rhys", "orcid": "0000-0001-7295-6691"},
-    {"name": "Duvernay, Thomas", "orcid": "0000-0001-6809-438X"},
-    {"name": "Bagchi, Sumit", "orcid": "0009-0005-0714-2022"},
-    {"name": "Richards, Fred D.", "orcid": "0000-0002-6610-4289"}
+    {
+      "name": "Hoggard, Mark J.",
+      "affiliation": "Research School of Earth Sciences, Australian National University",
+      "orcid": "0000-0003-4310-3862"
+    },
+    {
+      "name": "Hawkins, Rhys",
+      "orcid": "0000-0001-7295-6691",
+      "affiliation": "Australian National University"
+    },
+    {
+      "name": "Duvernay, Thomas",
+      "orcid": "0000-0001-6809-438X",
+      "affiliation": "Australian National University"
+    },
+    {
+      "name": "Bagchi, Sumit",
+      "orcid": "0009-0005-0714-2022",
+      "affiliation": "Australian National University"
+    },
+    {
+      "name": "Richards, Fred D.",
+      "orcid": "0000-0002-6610-4289",
+      "affiliation": "Imperial College London"
+    }
   ],
   "license": "mit",
   "access_right": "open",
-  "keywords": ["geotherm", "lithosphere", "thermobarometry", "xenolith", "Bayesian inference", "MCMC", "heat flow", "lithosphere-asthenosphere boundary"]
+  "keywords": [
+    "geotherm",
+    "lithosphere",
+    "thermobarometry",
+    "xenolith",
+    "Bayesian inference",
+    "MCMC",
+    "heat flow",
+    "lithosphere-asthenosphere boundary"
+  ]
 }
