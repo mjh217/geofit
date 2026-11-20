@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geofit"
+version = "2026.11"
+description = "Bayesian inversion of mantle P-T constraints for steady-state continental geotherms"
+authors = [
+    { name = "Mark Hoggard" },
+    { name = "Rhys Hawkins" },
+    { name = "Thomas Duvernay" },
+    { name = "Sumit Bagchi" },
+    { name = "Fred Richards" },
+]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = ["numpy", "scipy", "pandas", "emcee"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+geofit = "geofit.cli:main"
+
+[tool.setuptools]
+packages = ["geofit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
