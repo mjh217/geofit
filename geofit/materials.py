@@ -48,9 +48,12 @@ class ConstantModel(Model):
 
 
 class OsakoModel(Model):
-    """Constant alpha, cp and rho, with temperature- and pressure-dependent mantle conductivity.
+    """Constant alpha, cp and rho, with temperature- and pressure-dependent olivine conductivity.
 
-    Mantle model mmod = 4 of FITPLOT: k = (1.175 + 1264 / T) exp(0.038 P), with T in K and P in GPa.
+    k = (1.175 + 1264 / T) exp(0.038 P), with T in K and P in GPa. This is the average over the three
+    crystal axes of the olivine fits of Osako et al. (2004, Table 2), lambda = C0 + C1/T = 1.61 + 1732/T
+    measured at 8.3 GPa, reduced to 0 GPa with their average pressure dependence lambda = B0 exp(B1 P),
+    B1 = 0.038 / GPa.
     """
 
     def __init__(self, alpha, cp, rho):
@@ -67,7 +70,8 @@ class OsakoModel(Model):
 class HasterokModel(Model):
     """Constant alpha, cp and rho, with temperature- and pressure-dependent crustal conductivity.
 
-    Not yet selectable: its units still need checking against Hasterok & Chapman (2011).
+    Not selectable: the source of this formula is still to be confirmed, and it appears to take T in
+    Celsius (it receives K) and P in GPa (it receives Pa).
     """
 
     def __init__(self, alpha, cp, rho, crustk=2.5):
@@ -89,8 +93,8 @@ class HasterokModel(Model):
 def compression_crust(P):
     """Isothermal compression V0/V of the crust at pressure P [Pa].
 
-    Polynomial fit to the third-order Birch-Murnaghan equation of state of Grose & Afonso (2013),
-    with K0 = 90 GPa and K' = 4.8.
+    Quadratic fit to the third-order Birch-Murnaghan equation of state (Grose & Afonso, 2013, eq. 3)
+    with K0 = 90 GPa (Stephenson et al., 2024, Table 1) and K' = 4.8; within 0.001 of it to 2 GPa.
     """
     return 1.00000236 + (1.10952146e-11 - 2.12421383e-22 * P) * P
 
@@ -98,60 +102,65 @@ def compression_crust(P):
 def compression_mantle(P):
     """Isothermal compression V0/V of the mantle at pressure P [Pa].
 
-    As `compression_crust`, with K0 = 130 GPa and K' = 4.8.
+    As `compression_crust`, with K0 = 130 GPa and K' = 4.8 (Grose & Afonso, 2013, para. 11); within
+    0.001 of the equation of state to 14 GPa.
     """
     return 1.00009143 + (7.57454484e-12 - 8.00340143e-23 * P) * P
 
 
 def _density(rho0, compression, alpha0, alpha1, ag, P, T):
-    """Density with pressure and temperature (Grose & Afonso, 2013), T in K.
+    """Density with pressure and temperature (Grose & Afonso, 2013, eqs. 4-6), T in K.
 
     rho0 is the surface density, `compression` = V0/V at P, alpha = alpha0 + alpha1 T is the
-    thermal expansivity and ag the Anderson-Gruneisen parameter. Thermal expansion is integrated
-    from the surface temperature and reduced with compression.
+    thermal expansivity and ag the Anderson-Gruneisen parameter delta_T.
     """
+    # alpha(P, T) / alpha(T), eq. 5
     alpha_ratio = compression * np.exp((ag + 1.0) * (1.0 / compression - 1.0))
+    # Integral of alpha(T) from the surface temperature (273.15 K) to T
     expansion = alpha0 * (T - C2K) + 0.5 * alpha1 * (T**2 - C2K**2)
+    # rho(P) = rho0 V0/V (eq. 4), reduced by thermal expansion (eq. 6)
     return rho0 * compression * (1.0 - alpha_ratio * expansion)
 
 
 class HoggardModel(Model):
     """Mantle (olivine) properties that depend on temperature and pressure.
 
-    - alpha: forsterite, Bouhifd et al. (1996).
-    - cp: Korenaga & Korenaga (2016), with no pressure dependence (very weak over upper-mantle
+    - alpha: forsterite, alpha0 + alpha1 T (Bouhifd et al., 1996, Table 2).
+    - cp: Korenaga & Korenaga (2016, eq. 2), with no pressure dependence (very weak over upper-mantle
       pressures; Hofmeister, 2007).
-    - rho: Grose & Afonso (2013), using `compression_mantle` and the Anderson-Gruneisen parameter
-      for Fo90 (Anderson & Isaak, 1995).
-    - k: lattice diffusivity of mantle olivine (Grose & Afonso, 2013, fitted to Pertermann &
-      Hofmeister, 2006), times rho cp, with the pressure dependence of Hofmeister (2007) for hard
-      mantle phases, plus radiative conductivity for the given grain size (Grose & Afonso, 2013,
-      after Hofmeister, 2005, with typos corrected).
+    - rho: Grose & Afonso (2013, eqs. 4-6), using `compression_mantle` and delta_T = 6 for Fo90
+      (Grose & Afonso, 2013, para. 11, after Anderson & Isaak, 1995).
+    - k: lattice diffusivity of olivine (Korenaga & Korenaga, 2016, eq. 3, from Grose & Afonso,
+      2013, eq. 7, fitted to Pertermann & Hofmeister, 2006) times rho cp, with the pressure
+      dependence d(ln k)/dP = K'/K, K' = 4, for hard mantle phases (Hofmeister, 2007, eq. 11) as in
+      Korenaga & Korenaga (2016, eq. 4); plus radiative conductivity for the given grain size
+      (Grose & Afonso, 2013, eqs. A1-A2, after Hofmeister, 2005).
     """
 
     def __init__(self, rho=3.3e3, grain_size=0.1, bulk_modulus=130e9):
         self.rho0 = rho
 
-        # Thermal expansivity, alpha = alpha0 + alpha1 T (Bouhifd et al., 1996)
+        # Thermal expansivity, alpha = alpha0 + alpha1 T (Bouhifd et al., 1996, Table 2, "this work", 300-2150 K)
         self.alpha0 = 2.832e-5
         self.alpha1 = 0.758e-8
 
-        # Heat capacity coefficients (Korenaga & Korenaga, 2016)
+        # Heat capacity, cp = c0 - c1 T^-0.5 - c2 T^-3 (Korenaga & Korenaga, 2016, eq. 2)
         self.c0 = 1580.0
         self.c1 = 12230.0
         self.c2 = 1694e6
 
-        # d(ln k)/dP for lattice conductivity (Hofmeister, 2007)
+        # d(ln k)/dP = K'/K with K' = 4 for lattice conductivity (Hofmeister, 2007, eq. 11)
         self.dlogk_dP = 4.0 / bulk_modulus
 
-        # Lattice thermal diffusivity coefficients (Grose & Afonso, 2013)
+        # Lattice thermal diffusivity a, b, c, d, e (Korenaga & Korenaga, 2016, eq. 3)
         self.kappa0 = 0.565
         self.kappa1 = 0.67
         self.kappa2 = 590.0
         self.kappa3 = 1.4
         self.kappa4 = 135.0
 
-        # Radiative conductivity coefficients for grain size in cm (Grose & Afonso, 2013)
+        # Radiative conductivity coefficients for grain size d in cm (Grose & Afonso, 2013, eq. A2). The
+        # printed d0.315, d0.5 and d0.94 are read as powers of d (superscripts lost in typesetting).
         d = grain_size
         self.Ar = 1.8 * (1.0 - np.exp(-(d**1.3) / 0.15)) - (1.0 - np.exp(-np.sqrt(d) / 5.0))
         self.Br = 11.7 * np.exp(-d / 0.159) + 6.0 * np.exp(-(d**3) / 10.0)
@@ -160,7 +169,7 @@ class HoggardModel(Model):
         self.xA = 167.5 + 505.0 * np.exp(-np.sqrt(d) / 0.85)
         self.xB = 465.0 + 1700.0 * np.exp(-(d**0.94) / 0.175)
 
-        # Anderson-Gruneisen parameter for Fo90 (Anderson & Isaak, 1995)
+        # Anderson-Gruneisen parameter delta_T for Fo90 (Grose & Afonso, 2013, para. 11)
         self.ag = 6.0
 
     def alpha(self, T):
@@ -173,13 +182,16 @@ class HoggardModel(Model):
         return _density(self.rho0, compression_mantle(P), self.alpha0, self.alpha1, self.ag, P, T)
 
     def kappa_lattice(self, T):
-        """Lattice thermal diffusivity [m^2/s]; the fit uses T in Celsius."""
+        """Lattice thermal diffusivity [m^2/s] (Korenaga & Korenaga, 2016, eq. 3), a function of T - 273."""
         return (
             self.kappa0 + self.kappa1 * np.exp((C2K - T) / self.kappa2) + self.kappa3 * np.exp((C2K - T) / self.kappa4)
         ) * 1e-6
 
     def k_radiative(self, T):
-        """Radiative conductivity [W/m/K]; the fit uses T in Celsius. Pressure dependence unconstrained."""
+        """Radiative conductivity [W/m/K] (Grose & Afonso, 2013, eq. A1), with T in Celsius.
+
+        The second term uses (T - TB)^2: the printed (T - TB) is a typo. No pressure dependence.
+        """
         return self.Ar * np.exp(-(((T - C2K) - self.Ta) ** 2) / (2.0 * self.xA**2)) + self.Br * np.exp(
             -(((T - C2K) - self.Tb) ** 2) / (2.0 * self.xB**2)
         )
@@ -199,16 +211,17 @@ class HoggardModel(Model):
 class WhittingtonModel(Model):
     """Crustal properties that depend on temperature and pressure.
 
-    - alpha: Stephenson et al. (2024), from the data of Skinner (1966) and Cooper & Simmons (1977).
-    - cp and thermal diffusivity: Whittington et al. (2009), eqs. 1-4, with a change of fit at 846 K.
-    - rho: Grose & Afonso (2013), using `compression_crust`.
+    - alpha: alpha0 + alpha1 T (Stephenson et al., 2024, eq. 3 and Table 1).
+    - thermal diffusivity and cp of average crust: Whittington et al. (2009, eqs. 1-4), with a change
+      of fit at the quartz alpha-beta transition (846 K).
+    - rho: Grose & Afonso (2013, eqs. 4-6), using `compression_crust`.
     - k: diffusivity times rho cp.
     """
 
     def __init__(self, rho=2.7e3):
         self.rho0 = rho
 
-        # Thermal expansivity, alpha = alpha0 + alpha1 T (Stephenson et al., 2024)
+        # Thermal expansivity, alpha = alpha0 + alpha1 T (Stephenson et al., 2024, Table 1)
         self.alpha0 = 1.0e-5
         self.alpha1 = 2.9e-8
 
@@ -216,14 +229,18 @@ class WhittingtonModel(Model):
         self.ag = 6.0
 
     def kappa(self, T):
-        """Thermal diffusivity [m^2/s] (Whittington et al., 2009, eqs. 1-2)."""
+        """Thermal diffusivity [m^2/s] (Whittington et al., 2009, eq. 1 below 846 K, eq. 2 above)."""
         if np.isscalar(T):
             kappa = 567.3 / T - 0.062 if T < 846.0 else 0.732 - 0.000135 * T
             return kappa / 1e6
         return [self.kappa(t) for t in T]
 
     def cp(self, T):
-        """Specific heat capacity [J/kg/K] (Whittington et al., 2009, eqs. 3-4), per kg of 221.78 g/mol."""
+        """Specific heat capacity [J/kg/K] (Whittington et al., 2009, eq. 3 below 846 K, eq. 4 above).
+
+        The equations give J/mol/K for a mean molar mass of 221.78 g/mol. Eq. 3 uses 5.0e6 T^-2, as in
+        their correction (printed as 5.0e-6).
+        """
         if np.isscalar(T):
             if T < 846.0:
                 return (199.5 + 0.0857 * T - 5e6 / T**2) / 221.78e-3
