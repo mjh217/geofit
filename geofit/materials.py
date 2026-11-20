@@ -68,26 +68,28 @@ class OsakoModel(Model):
 
 
 class HasterokModel(Model):
-    """Constant alpha, cp and rho, with temperature- and pressure-dependent crustal conductivity.
+    """Constant alpha, cp and rho, with an empirical temperature- and pressure-dependent conductivity.
 
-    Not selectable: the source of this formula is still to be confirmed, and it appears to take T in
-    Celsius (it receives K) and P in GPa (it receives Pa).
+    Goes et al. (2020, section 3.2, unnumbered equations on p. 6), for crustal rocks:
+        k = k1 + k2,  k1 = k0 (n - 1) / n (1 + beta P),  k2 = k0 exp(-(T - 25) / 300) / n,
+    with T in Celsius, P in GPa, k0 the room-temperature conductivity, beta = 0.1 / GPa and
+    n = 6.4 - 2.3 log k0 (taken as the natural log). k2 is printed without the 1/n; it is included
+    here so that k = k0 at 25 C and 0 GPa. At high temperature k tends to k0 (n - 1) / n.
     """
 
-    def __init__(self, alpha, cp, rho, crustk=2.5):
+    def __init__(self, alpha, cp, rho, k0):
         self.alpha = alpha
         self.cp = cp
         self.rho = rho
-        self.crustk = crustk
+        self.k0 = k0
+        self.n = 6.4 - 2.3 * np.log(k0)
+        self.beta = 0.1  # [1/GPa]
 
     def compute(self, depth, pressure, temperature):
-        n = 6.4 - 2.3 * np.log(self.crustk)
-        beta = 0.1
-        k1 = self.crustk * ((n - 1.0) / n) * (1.0 + beta * pressure)
-        k2 = self.crustk * np.exp(-(temperature - 25.0) / 300.0) * (1.0 / n) * (1.0 + beta * pressure)
-        k = k1 + k2
+        k1 = self.k0 * (self.n - 1.0) / self.n * (1.0 + self.beta * pressure / 1e9)
+        k2 = self.k0 * np.exp(-(temperature - C2K - 25.0) / 300.0) / self.n
         ones = self._ones(depth, pressure, temperature)
-        return self.alpha * ones, self.cp * ones, self.rho * ones, k * ones
+        return self.alpha * ones, self.cp * ones, self.rho * ones, (k1 + k2) * ones
 
 
 def compression_crust(P):
@@ -265,13 +267,14 @@ class WhittingtonModel(Model):
         return alpha * ones, cp * ones, rho * ones, k * ones
 
 
-MODELS = ("constant", "osako", "hoggard", "whittington")
+MODELS = ("constant", "osako", "hasterok", "hoggard", "whittington")
 
 
 def make_model(name, alpha, cp, rho, k, **kwargs):
     """Build a model by name (case-insensitive).
 
-    alpha, cp, rho and k are the constant values, used where the model does not compute them.
+    alpha, cp, rho and k are the constant values, used where the model does not compute them (for
+    the Hasterok model, k is the room-temperature conductivity k0).
     kwargs (grain_size, bulk_modulus) are passed to the Hoggard model.
     """
     name = name.lower()
@@ -279,6 +282,8 @@ def make_model(name, alpha, cp, rho, k, **kwargs):
         return ConstantModel(alpha, cp, rho, k)
     if name == "osako":
         return OsakoModel(alpha, cp, rho)
+    if name == "hasterok":
+        return HasterokModel(alpha, cp, rho, k)
     if name == "hoggard":
         return HoggardModel(rho, **kwargs)
     if name == "whittington":
