@@ -6,14 +6,14 @@ from scipy.optimize import brentq
 
 from geofit import forward
 from geofit.defaults import P_SURFACE, T_SURFACE, Z_MAX, Z_MAX_ADIABAT
-from geofit.materials import ConstantModel
+from geofit.materials import constant_model
 
 ALPHA, CP, K = 3e-5, 1187.0, 2.5
 RHO_C, RHO_M = 2700.0, 3300.0
 G = 9.81
 TP = 1603.15
-CRUST = ConstantModel(ALPHA, 750.0, RHO_C, K)
-MANTLE = ConstantModel(ALPHA, CP, RHO_M, K)
+CRUST = constant_model(ALPHA, 750.0, RHO_C, K)
+MANTLE = constant_model(ALPHA, CP, RHO_M, K)
 
 
 @pytest.fixture(scope="module")
