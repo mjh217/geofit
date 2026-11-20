@@ -21,6 +21,10 @@ class NoAdiabatError(Exception):
     """The geotherm does not meet the adiabat above the maximum depth."""
 
 
+class AdiabatInCrustError(Exception):
+    """The geotherm reaches the adiabat within the crust, so the lithosphere would be thinner than the crust."""
+
+
 class IntegrationError(Exception):
     """The mantle integration stopped for an unexpected reason."""
 
@@ -142,8 +146,9 @@ def compute_geotherm(crust_model, mantle_model, g, z_crust, z_max, h_crust, h_ma
     adiabat at depth z_mbl. Below that the profile follows the adiabat down to z_max. If alphaD > 0,
     the corner at z_mbl is smoothed over a width of alphaD * z_mbl (the thermal boundary layer).
 
-    Returns depth, temperature and pressure every km, and z_mbl. Raises NegativeFluxError if the
-    heat flux reaches zero first, and NoAdiabatError if the adiabat is not reached above z_max.
+    Returns depth, temperature and pressure every km, and z_mbl. Raises AdiabatInCrustError if T
+    reaches the adiabat within the crust, NegativeFluxError if the heat flux reaches zero first, and
+    NoAdiabatError if the adiabat is not reached above z_max.
     """
 
     def derivatives(model, heat_production):
@@ -154,19 +159,6 @@ def compute_geotherm(crust_model, mantle_model, g, z_crust, z_max, h_crust, h_ma
 
         return f
 
-    # Crust
-    sol_crust = scipy.integrate.solve_ivp(
-        derivatives(crust_model, h_crust),
-        (0.0, z_crust),
-        [T_SURFACE, P_SURFACE, surface_heat_flux],
-        dense_output=True,
-        first_step=1.0e3,
-        max_step=5.0e3,
-    )
-    if sol_crust.y[2][-1] <= 0.0:
-        raise NegativeFluxError("Heat flux is negative at the base of the crust")
-
-    # Mantle, stopping when the heat flux reaches zero or T reaches the adiabat
     def flux_zero(z, y):
         return y[2]
 
@@ -175,6 +167,24 @@ def compute_geotherm(crust_model, mantle_model, g, z_crust, z_max, h_crust, h_ma
 
     flux_zero.terminal = True
     reaches_adiabat.terminal = True
+
+    # Crust, stopping if T reaches the adiabat (otherwise T runs away, e.g. for a very high surface
+    # heat flux, and the material models are evaluated at impossible temperatures)
+    sol_crust = scipy.integrate.solve_ivp(
+        derivatives(crust_model, h_crust),
+        (0.0, z_crust),
+        [T_SURFACE, P_SURFACE, surface_heat_flux],
+        dense_output=True,
+        first_step=1.0e3,
+        max_step=5.0e3,
+        events=[reaches_adiabat],
+    )
+    if sol_crust.status == 1:
+        raise AdiabatInCrustError("The geotherm reaches the adiabat within the crust")
+    if sol_crust.y[2][-1] <= 0.0:
+        raise NegativeFluxError("Heat flux is negative at the base of the crust")
+
+    # Mantle, stopping when the heat flux reaches zero or T reaches the adiabat
 
     sol_mantle = scipy.integrate.solve_ivp(
         derivatives(mantle_model, h_mantle),

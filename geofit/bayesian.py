@@ -50,7 +50,13 @@ def make_likelihood(crust_model, mantle_model, g, z_max, alphaD, adiabat, h_mant
             Z, T, P, z_mbl = forward.compute_geotherm(
                 crust_model, mantle_model, g, z_crust, z_max, h_crust, h_mantle, surface_heat_flux, adiabat, alphaD
             )
-        except (forward.NegativeFluxError, forward.NoAdiabatError, forward.IntegrationError, ValueError):
+        except (
+            forward.AdiabatInCrustError,
+            forward.NegativeFluxError,
+            forward.NoAdiabatError,
+            forward.IntegrationError,
+            ValueError,
+        ):
             return -np.inf
 
         residual = P_data - scipy.interpolate.interp1d(T, P, kind="cubic")(T_data)

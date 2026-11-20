@@ -278,6 +278,8 @@ def forward_geotherm(argv):
             crust_model, mantle_model, g, args.zcrust * 1e3, args.hcrust, args.Hmantle, args.surfaceheatflux,
             adiabat, args.alphaD,
         )
+    except forward.AdiabatInCrustError as err:
+        sys.exit(f"No geotherm: {err} (surface heat flux too high)")
     except forward.NegativeFluxError as err:
         sys.exit(f"No geotherm: {err} (surface heat flux too low for this heat production)")
     except forward.NoAdiabatError:
