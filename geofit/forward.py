@@ -30,10 +30,10 @@ class IntegrationError(Exception):
 
 
 def gravity(z):
-    """Gravitational acceleration [m/s^2] at depth z [m], from a polynomial fit valid to about 400 km."""
+    """Gravitational acceleration [m/s^2] at depth z [m]: a quadratic fit to 80 km and linear below, valid to about 400 km."""
     z_km = np.asarray(z / 1.0e3)
     ratio = np.empty_like(z_km)
-    shallow = z_km <= 80e3
+    shallow = z_km <= 80.0
     ratio[shallow] = -4.14511244e-7 * z_km[shallow] ** 2 + 1.01825756e-4 * z_km[shallow] + 1.0
     ratio[~shallow] = 3.63281500e-5 * z_km[~shallow] + 1.00258694
     return 9.81 * ratio

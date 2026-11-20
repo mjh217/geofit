@@ -30,10 +30,6 @@ def add_model_options(parser):
         help="width of the smoothed corner where the geotherm meets the adiabat, as a fraction of its depth "
         "(0 = no smoothing; default: %(default)s)",
     )
-    models.add_argument("--Tp", type=float, default=d.TP, help="mantle potential temperature [K] (default: %(default)s)")
-    models.add_argument(
-        "--Hmantle", type=float, default=0.0, help="lithospheric mantle heat production [W/m^3] (default: %(default)s)"
-    )
 
     constants = parser.add_argument_group("constant values (used where a model does not compute them)")
     constants.add_argument("--crust-rho", type=float, default=d.RHO_CRUST, help="crustal density [kg/m^3]")
@@ -55,6 +51,16 @@ def add_model_options(parser):
         default=d.BULK_MODULUS_MANTLE,
         help="bulk modulus [Pa] for the pressure dependence of conductivity; the density equations of state "
         "use fixed K0 = 90 GPa (crust) and 130 GPa (mantle) (default: %(default)s)",
+    )
+
+
+def add_mantle_options(parser, note=""):
+    """--Tp and --Hmantle (in the inversion, the fixed values unless inverted for)."""
+    parser.add_argument(
+        "--Tp", type=float, default=d.TP, help=f"mantle potential temperature [K]{note} (default: %(default)s)"
+    )
+    parser.add_argument(
+        "--Hmantle", type=float, default=0.0, help=f"lithospheric mantle heat production [W/m^3]{note} (default: %(default)s)"
     )
 
 
@@ -85,7 +91,11 @@ def inversion_parser():
     parser.add_argument("--samplepriors", action="store_true", help="also write random samples of the priors")
     parser.add_argument("--iwrite", action="store_true", help="also write every sampled geotherm to its own CSV file")
     add_model_options(parser)
-    parser.add_argument("--sigma", type=float, default=3e8, help="uncertainty of the data pressures [Pa] (default: %(default)s)")
+    fixed = parser.add_argument_group("fixed values of parameters that can be inverted for")
+    add_mantle_options(fixed, note=", unless --invertTp/--invertHmantle")
+    fixed.add_argument(
+        "--sigma", type=float, default=3e8, help="uncertainty of the data pressures [Pa], unless --hierarchical (default: %(default)s)"
+    )
 
     optional = parser.add_argument_group("optional parameters to invert for")
     optional.add_argument("--invertHmantle", action="store_true", help="invert for mantle heat production")
@@ -264,6 +274,7 @@ def forward_parser():
     parser.add_argument("--surfaceheatflux", type=float, required=True, help="surface heat flux [W/m^2]")
     parser.add_argument("--zcrust", type=float, required=True, help="crustal thickness [km]")
     parser.add_argument("--hcrust", type=float, required=True, help="crustal heat production [W/m^3]")
+    add_mantle_options(parser)
     parser.add_argument("-o", "--output", default="geotherm.csv", help="geotherm CSV (default: %(default)s)")
     add_model_options(parser)
     return parser
