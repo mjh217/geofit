@@ -1,5 +1,7 @@
 # GeoFit
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24389533.svg)](https://doi.org/10.5281/zenodo.24389533)
+
 GeoFit estimates steady-state continental geotherms from pressure-temperature (P-T) constraints, such as thermobarometry of mantle xenoliths and xenocrysts. Each geotherm is found by integrating the equation for 1-D vertical heat conduction downwards from the surface until it meets the mantle adiabat. It is defined by:
 
 1. Surface heat flux
@@ -88,6 +90,8 @@ The tests check that seeded inversions reproduce the outputs of the version used
 If you use GeoFit, please cite:
 
 > Hoggard, M. J., Sudholz, Z. J., Hawkins, R., Duvernay, T., Bagchi, S., Richards, F. D., Jaques, A. L., Yaxley, G. M., Czarnota, K., & Haynes, M. (2026). Paleothermal structure of the Australian continental lithosphere. *Geochemistry, Geophysics, Geosystems* (accepted).
+
+Each release of GeoFit is archived on Zenodo at [10.5281/zenodo.24389533](https://doi.org/10.5281/zenodo.24389533), which always resolves to the latest version; each release also has its own DOI (v2026.11: [10.5281/zenodo.24389534](https://doi.org/10.5281/zenodo.24389534)).
 
 ## Licence
 
