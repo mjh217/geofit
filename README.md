@@ -1,27 +1,91 @@
 # GeoFit
 
-This software package solves the equation governing 1-D vertical conduction of heat through continental lithosphere by starting from the surface and integrating downwards until it meets the mantle adaiabat. Each geotherm is definded by the following input parameters:
-1. Surface heat flow
+GeoFit estimates steady-state continental geotherms from pressure-temperature (P-T) constraints, such as thermobarometry of mantle xenoliths and xenocrysts. Each geotherm is found by integrating the equation for 1-D vertical heat conduction downwards from the surface until it meets the mantle adiabat. It is defined by:
+
+1. Surface heat flux
 2. Crustal thickness
-3. Bulk radiogenic heat production in the crust
-4. Mantle potential temperature (default = 1330°C)
-5. Bulk radiogenic heat production in the lithospheric mantle (default = 0)
+3. Bulk radiogenic heat production of the crust
+4. Mantle potential temperature (default 1330 °C)
+5. Bulk radiogenic heat production of the lithospheric mantle (default 0)
 
-And a user can also select amongst different models for the neccessary density and thermal paramters ($\alpha$, $C_P$, $k$, $\rho_0$), some of which permit inclusion of temperature- and pressure-dependence of these parameters. The code then uses a Bayesian probability framework to evaluate the posterior distribution of these input parameters, given both a user-provided assumption of their prior probability distribution and a set of underlying pressure-temperature, $P-T$ constraints from within the lithosphere that come from independent datasets including thermobarometric analysis of mantle xenoliths/xenocrysts and/or conversion of seismic velocities into temperature. In addition to posterior distributions of the input parameters, it also provides estimates of the thickness of the mechanical and thermal lithosphere-asthenosphere boundaries (LABs) and the range of potential temperatures as a function of depth.
+The density and thermal properties (α, C<sub>P</sub>, k, ρ) of the crust and mantle can be chosen from several models, some of which depend on temperature and pressure. GeoFit then uses Bayesian inference (MCMC sampling with [emcee](https://emcee.readthedocs.io)) to find the posterior distribution of these parameters, given their prior distributions and the P-T data. It also gives the depth of the lithosphere-asthenosphere boundary (LAB) and the range of temperatures at each depth.
 
-# Local files
+This code was developed at the Australian National University as part of Geoscience Australia's [*Resourcing Australia's Prosperity*](https://www.ga.gov.au/scientific-topics/resourcing-australias-prosperity) initiative.
 
-- [defaults.py](defaults.py) - Contains reasonable default values for the various parameters.
-- [forwardmodel.py](forwardmodel.py) - Contains code to solve the forward problem of deriving a geotherm given a set of input parameters.
-- [model.py](model.py) - Contains models governing the various density and thermal parameters such as $\alpha$, $C_P$, $k$, $\rho_0$.
-- [bayesian.py](bayesian.py) - Contains functions to support Bayesian inversion (e.g., definition of likelihood, prior probabilities).
-- [invert.py](invert.py) - An executable script to read in various command-line arguments and $P-T$ constraints, and invert them to find a family of potential geotherms.
+## Installation
 
-An example snippet to run the code on the command line is:
-```python invert.py TP_data.csv --invertTp --iwrite```
+```bash
+pip install -e .
+```
 
-# How to cite
+This needs numpy, scipy, pandas and emcee, and gives the `geofit` command (or run `python -m geofit`).
 
-Code development was undertaken at the Australian National University and was funded by Geoscience Australia as a contribution to the *Resourcing Australia's Prosperity* initiative. A supporting publication is being prepared for submission:
+## Inversion
 
-Hoggard, M.J., R. Hawkins, T. Duvernay, S. Bagchi, F.D. Richards, Z.J. Sudholz, A.L. Jaques, G.M. Yaxley, K. Czarnota & M. Haynes (in prep). Paleogeothermal structure of the Australian continent.
+```bash
+geofit example_data/brigooda_TP.csv --crust Whittington --mantle Hoggard --invertTp
+```
+
+The input is a CSV with a header row, temperature (°C) in the first column and pressure (GPa) in the second; other columns are ignored. Results are written to `output/` (or `--output-dir`), named after the input file:
+
+- `<name>_prior.csv`: the prior distributions used.
+- `<name>_posterior.csv`: posterior samples (every 5th step of each walker), with their log-probability, parameters and LAB depth (km).
+- `<name>_geotherm.npz`: the geotherm of each posterior sample, as a table of depth, pressure, temperature, adiabatic temperature and thermal properties. Read with `np.load(path, allow_pickle=True)["geotherm"]`.
+- `<name>_prior_samples.csv` (with `--samplepriors`): random samples of the priors, for comparison with the posterior.
+- `<name>_geotherms/geotherm_<i>.csv` (with `--iwrite`): each geotherm as its own CSV.
+
+Surface heat flux, crustal thickness and crustal heat production are always inverted for. `--invertTp`, `--invertHmantle` and `--hierarchical` add the potential temperature, mantle heat production and the uncertainty of the data pressures (otherwise fixed by `--Tp`, `--Hmantle` and `--sigma`). `geofit -h` lists the options, including the priors, the thermal models and the MCMC settings. `--seed` makes a run reproducible.
+
+## Forward model
+
+To compute a single geotherm without an inversion:
+
+```bash
+geofit forward --surfaceheatflux 0.06 --zcrust 35 --hcrust 1e-6 --Tp 1603.15 --Hmantle 0 \
+    --crust Whittington --mantle Hoggard -o geotherm.csv
+```
+
+This writes the same table as the inversion's geotherms and prints the LAB depth. Units are W/m<sup>2</sup>, km, W/m<sup>3</sup> and K.
+
+## Thermal models
+
+Choose with `--crust` and `--mantle`. Where a model does not compute a property, it uses the constant value set by `--crust-rho`, `--crust-alpha`, `--crust-cp`, `--crust-cond` (or the `--mantle-` equivalents).
+
+| Model | Intended for | Temperature and pressure dependence |
+|---|---|---|
+| `Constant` | crust or mantle | none |
+| `Hasterok` | crust | k (Goes et al., 2020), with `--crust-cond` as the room-temperature value |
+| `Whittington` | crust | α (Stephenson et al., 2024); k and C<sub>P</sub> (Whittington et al., 2009); ρ (Grose & Afonso, 2013) |
+| `Osako` | mantle | k (Osako et al., 2004) |
+| `Hoggard` | mantle | α (Bouhifd et al., 1996); C<sub>P</sub> and lattice k (Korenaga & Korenaga, 2016); radiative k for grain size `--mantle-grain-size` and ρ (Grose & Afonso, 2013); pressure dependence of k (Hofmeister, 2007) |
+
+`geofit/materials.py` gives the equations used and their sources.
+
+## Reproducing Hoggard et al. (2026)
+
+For each site, Hoggard et al. (2026) ran
+
+```bash
+geofit SITE_TP.csv --crust Whittington --mantle Hoggard --mantle-grain-size 0.3 --invertTp --samplepriors \
+    --zcrustmean 30
+```
+
+with `--zcrustmean 30` in Phanerozoic regions and `--zcrustmean 40` in cratonic and craton-adjacent regions. The other priors are the defaults.
+
+## Tests
+
+```bash
+pip install -e ".[test]" && pytest
+```
+
+The tests check that seeded inversions reproduce the outputs of the version used by Hoggard et al. (2026), that the forward model matches exact solutions, and that the thermal models match values from their papers.
+
+## Citation
+
+If you use GeoFit, please cite:
+
+> Hoggard, M. J., Sudholz, Z. J., Hawkins, R., Duvernay, T., Bagchi, S., Richards, F. D., Jaques, A. L., Yaxley, G. M., Czarnota, K., & Haynes, M. (2026). Paleothermal structure of the Australian continental lithosphere. *Geochemistry, Geophysics, Geosystems* (accepted).
+
+## Licence
+
+GeoFit is released under the MIT licence. See `LICENSE`.
