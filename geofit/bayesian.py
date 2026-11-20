@@ -31,7 +31,8 @@ def make_likelihood(crust_model, mantle_model, g, z_max, alphaD, adiabat, h_mant
     """Log-likelihood of the P-T data for a model vector x.
 
     For each datum, the misfit is the difference between its pressure and the pressure of the
-    geotherm at its temperature, with Gaussian uncertainty sigma [Pa]. Models whose geotherm
+    geotherm at its temperature, with Gaussian uncertainty sigma [Pa] (Hoggard et al., 2026, eq. 25):
+    ln L = -sum[(P_obs - P_pred)^2 / (2 sigma^2) + ln(sigma) + ln(2 pi) / 2]. Models whose geotherm
     cannot be computed (e.g. the heat flux runs out) have zero likelihood. h_mantle, sigma and
     adiabat are fixed here, but can be replaced for parameters that are inverted for (see the
     `add_*` functions below).

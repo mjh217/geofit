@@ -78,9 +78,9 @@ class Adiabat:
 def compute_adiabat(model, g, tp, P0, z_max):
     """Integrate the adiabat for a mantle model down to z_max.
 
-    dT/dz = alpha g T / cp and dP/dz = rho g, starting from T = tp (the potential temperature) and
-    P = P0 at the surface. Computed once per potential temperature and used to find where each
-    geotherm meets the adiabat.
+    dT/dz = alpha g T / cp and dP/dz = rho g (Hoggard et al., 2026, eqs. 3-4), starting from T = tp
+    (the potential temperature) and P = P0 at the surface. Computed once per potential temperature
+    and used to find where each geotherm meets the adiabat.
     """
 
     def derivatives(z, y):
@@ -145,7 +145,8 @@ def compute_geotherm(
 ):
     """Conductive geotherm for the given parameters, joined to the adiabat below the MBL.
 
-    Integrates dT/dz = q / k, dP/dz = rho g and dq/dz = -H downwards from the surface (T = 0 C,
+    Integrates steady-state conduction, d/dz (k dT/dz) + H = 0 (Hoggard et al., 2026, eq. 1), as
+    dT/dz = q / k and dq/dz = -H, with dP/dz = rho g (eq. 4), downwards from the surface (T = 0 C,
     P = 1 atm, q = surface_heat_flux): first through the crust (thickness z_crust, heat production
     h_crust [W/m^3]), then through the mantle (heat production h_mantle) until T reaches the
     adiabat at depth z_mbl. Below that the profile follows the adiabat down to z_max. If alphaD > 0,

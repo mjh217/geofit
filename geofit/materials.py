@@ -53,7 +53,8 @@ def cp_mantle(T):
 def cp_crust(T):
     """Heat capacity of average crust (Whittington et al., 2009, eq. 3 below 846 K, eq. 4 above).
 
-    The equations give J/mol/K for a mean molar mass of 221.78 g/mol. Eq. 3 uses 5.0e6 T^-2, as in
+    The equations give J/mol/K for a mean molar mass of 221.78 g/mol; Hoggard et al. (2026, eq. 23)
+    give them per kg. Eq. 3 uses 5.0e6 T^-2, as in
     their correction (printed as 5.0e-6).
     """
     if np.isscalar(T):
@@ -78,7 +79,10 @@ def kappa_olivine(T):
 
 
 def kappa_crust(T):
-    """Diffusivity of average crust (Whittington et al., 2009, eq. 1 below 846 K, eq. 2 above)."""
+    """Diffusivity of average crust (Whittington et al., 2009, eq. 1 below 846 K, eq. 2 above).
+
+    Hoggard et al. (2026, eq. 24) give these in m^2/s.
+    """
     if np.isscalar(T):
         kappa = 567.3 / T - 0.062 if T < 846.0 else 0.732 - 0.000135 * T
         return kappa / 1e6
@@ -151,8 +155,9 @@ class RadiativeConductivity:
 def compression_crust(P):
     """Isothermal compression V0/V of the crust at pressure P [Pa].
 
-    Quadratic fit to the third-order Birch-Murnaghan equation of state (Grose & Afonso, 2013, eq. 3)
-    with K0 = 90 GPa (Stephenson et al., 2024, Table 1) and K' = 4.8; within 0.001 of it to 2 GPa.
+    Quadratic fit (Hoggard et al., 2026, eq. 22) to the third-order Birch-Murnaghan equation of state
+    (Grose & Afonso, 2013, eq. 3) with K0 = 90 GPa (Stephenson et al., 2024, Table 1) and K' = 4.8;
+    within 0.001 of it to 2 GPa.
     """
     return 1.00000236 + (1.10952146e-11 - 2.12421383e-22 * P) * P
 
@@ -160,8 +165,8 @@ def compression_crust(P):
 def compression_mantle(P):
     """Isothermal compression V0/V of the mantle at pressure P [Pa].
 
-    As `compression_crust`, with K0 = 130 GPa and K' = 4.8 (Grose & Afonso, 2013, para. 11); within
-    0.001 of the equation of state to 14 GPa.
+    Quadratic fit (Hoggard et al., 2026, eq. 8), as `compression_crust`, with K0 = 130 GPa and K' = 4.8
+    (Grose & Afonso, 2013, para. 11); within 0.001 of the equation of state to 14 GPa.
     """
     return 1.00009143 + (7.57454484e-12 - 8.00340143e-23 * P) * P
 
@@ -241,7 +246,8 @@ def hoggard_crust_model(rho0=2.7e3):
     """Crustal model of Hoggard et al. (2026).
 
     alpha of continental crust (Stephenson et al., 2024); diffusivity and cp of average crust
-    (Whittington et al., 2009); density (Grose & Afonso, 2013) with K0 = 90 GPa; k = kappa rho cp.
+    (Whittington et al., 2009); density (Grose & Afonso, 2013) with K0 = 90 GPa; k = kappa rho cp
+    (Hoggard et al., 2026, eq. 11).
     """
     rho = Density(rho0, compression_crust, ALPHA_CRUST)
 
@@ -255,7 +261,8 @@ def hoggard_mantle_model(rho0=3.3e3, grain_size=0.3, bulk_modulus=130e9):
     """Mantle model of Hoggard et al. (2026).
 
     alpha of forsterite (Bouhifd et al., 1996); cp (Korenaga & Korenaga, 2016); density (Grose &
-    Afonso, 2013) with K0 = 130 GPa; k = kappa rho cp exp(P K'/K) + k_rad, from the olivine lattice
+    Afonso, 2013) with K0 = 130 GPa; k = kappa rho cp exp(P K'/K) + k_rad (Hoggard et al., 2026,
+    eqs. 13 and 21), from the olivine lattice
     diffusivity, the pressure dependence d(ln k)/dP = K'/K with K' = 4 for hard mantle phases
     (Hofmeister, 2007, eq. 11; as in Korenaga & Korenaga, 2016, eq. 4) and the radiative
     conductivity for the grain size [cm] (Grose & Afonso, 2013).
