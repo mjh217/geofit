@@ -85,7 +85,7 @@ def test_density(model):
 def test_shapes():
     # Scalars in, scalars out; arrays in, arrays out, including the constant properties
     for name, layer in [("constant", "crust"), ("osako", "mantle"), ("hasterok", "crust"), ("hoggard", "crust"),
-                        ("hoggard", "mantle"), ("whittington", "crust")]:
+                        ("hoggard", "mantle")]:
         m = make_model(name, layer, 3e-5, 1000.0, 3000.0, 2.5)
         assert all(np.ndim(v) == 0 for v in m.compute(1e3, 1e8, 600.0))
         values = m.compute(np.array([1e3, 2e3]), np.array([1e8, 2e8]), np.array([600.0, 700.0]))
@@ -93,5 +93,6 @@ def test_shapes():
     assert isinstance(make_model("hoggard", "crust", 0, 0, 2700.0, 0), HoggardCrustModel)
     assert isinstance(make_model("hoggard", "mantle", 0, 0, 3300.0, 0), HoggardMantleModel)
     assert make_model("hoggard", "mantle", 0, 0, 3300.0, 0).xA == HoggardMantleModel(grain_size=0.3).xA
-    with pytest.raises(ValueError):
-        make_model("unknown", "crust", 0, 0, 0, 0)
+    for name, layer in [("unknown", "crust"), ("osako", "crust"), ("hasterok", "mantle")]:
+        with pytest.raises(ValueError):
+            make_model(name, layer, 0, 0, 0, 0)

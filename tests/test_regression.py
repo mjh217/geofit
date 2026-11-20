@@ -16,8 +16,8 @@ from geofit.cli import main
 DATA = Path(__file__).parent / "data"
 
 RUNS = {
-    # The settings of Hoggard et al. (2026); the reference was made with the original options
-    # --crust Whittington --mantle Hoggard --mantle-grain-size 0.3
+    # The settings of Hoggard et al. (2026); the reference was made with the original scripts, in which
+    # the crustal model was called Whittington, with grain size 0.3 cm
     "paper": ["--seed", "11", "--crust", "Hoggard", "--mantle", "Hoggard", "--invertTp", "--samplepriors",
               "--priorsamples", "200"],
     # Other options: Osako mantle, data uncertainty as a parameter, no smoothing at the base

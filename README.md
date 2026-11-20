@@ -49,9 +49,9 @@ This writes the same table as the inversion's geotherms and prints the LAB depth
 
 ## Thermal models
 
-Choose with `--crust` and `--mantle`. Where a model does not compute a property, it uses the constant value set by `--crust-rho`, `--crust-alpha`, `--crust-cp`, `--crust-cond` (or the `--mantle-` equivalents).
+Choose with `--crust` (`Constant`, `Hasterok` or `Hoggard`) and `--mantle` (`Constant`, `Osako` or `Hoggard`). Where a model does not compute a property, it uses the constant value set by `--crust-rho`, `--crust-alpha`, `--crust-cp`, `--crust-cond` (or the `--mantle-` equivalents).
 
-| Model | Intended for | Temperature and pressure dependence |
+| Model | Layer | Temperature and pressure dependence |
 |---|---|---|
 | `Constant` | crust or mantle | none |
 | `Hasterok` | crust | k (Goes et al., 2020), with `--crust-cond` as the room-temperature value |

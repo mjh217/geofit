@@ -48,7 +48,7 @@ class ConstantModel(Model):
 
 
 class OsakoModel(Model):
-    """Constant alpha, cp and rho, with temperature- and pressure-dependent olivine conductivity.
+    """Mantle: constant alpha, cp and rho, with temperature- and pressure-dependent olivine conductivity.
 
     k = (1.175 + 1264 / T) exp(0.038 P), with T in K and P in GPa. This is the average over the three
     crystal axes of the olivine fits of Osako et al. (2004, Table 2), lambda = C0 + C1/T = 1.61 + 1732/T
@@ -68,7 +68,7 @@ class OsakoModel(Model):
 
 
 class HasterokModel(Model):
-    """Constant alpha, cp and rho, with an empirical temperature- and pressure-dependent conductivity.
+    """Crust: constant alpha, cp and rho, with an empirical temperature- and pressure-dependent conductivity.
 
     Goes et al. (2020, section 3.2, unnumbered equations on p. 6), for crustal rocks:
         k = k1 + k2,  k1 = k0 (n - 1) / n (1 + beta P),  k2 = k0 exp(-(T - 25) / 300) / n,
@@ -267,27 +267,30 @@ class HoggardCrustModel(Model):
         return alpha * ones, cp * ones, rho * ones, k * ones
 
 
-MODELS = ("constant", "osako", "hasterok", "hoggard")
+# Models available for each layer
+CRUST_MODELS = ("constant", "hasterok", "hoggard")
+MANTLE_MODELS = ("constant", "osako", "hoggard")
 
 
 def make_model(name, layer, alpha, cp, rho, k, **kwargs):
     """Build a model by name (case-insensitive) for layer "crust" or "mantle".
 
+    CRUST_MODELS and MANTLE_MODELS list the names allowed for each layer.
     alpha, cp, rho and k are the constant values, used where the model does not compute them (for
     the Hasterok model, k is the room-temperature conductivity k0). "hoggard" gives the crustal or
     mantle model of Hoggard et al. (2026), depending on the layer; kwargs (grain_size,
-    bulk_modulus) are passed to the mantle version. "whittington" is accepted for the crustal
-    version, its earlier name.
+    bulk_modulus) are passed to the mantle version.
     """
     name = name.lower()
+    allowed = CRUST_MODELS if layer == "crust" else MANTLE_MODELS
+    if name not in allowed:
+        raise ValueError(f"Unknown {layer} model '{name}' (choose from {', '.join(allowed)})")
     if name == "constant":
         return ConstantModel(alpha, cp, rho, k)
     if name == "osako":
         return OsakoModel(alpha, cp, rho)
     if name == "hasterok":
         return HasterokModel(alpha, cp, rho, k)
-    if name == "hoggard" and layer == "mantle":
+    if layer == "mantle":
         return HoggardMantleModel(rho, **kwargs)
-    if name in ("hoggard", "whittington") and layer == "crust":
-        return HoggardCrustModel(rho)
-    raise ValueError(f"Unknown {layer} model '{name}' (choose from {', '.join(MODELS)})")
+    return HoggardCrustModel(rho)

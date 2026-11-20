@@ -14,17 +14,21 @@ import pandas as pd
 from . import bayesian, forward, output
 from . import defaults as d
 from .inversion import sample_posterior
-from .materials import MODELS, make_model
+from .materials import CRUST_MODELS, MANTLE_MODELS, make_model
 
 
 def add_model_options(parser):
     """Options shared by the inversion and the forward model."""
     models = parser.add_argument_group("thermal models")
     models.add_argument(
-        "--crust", default="Constant", help=f"crustal model: {', '.join(MODELS)} (default: %(default)s)",
+        "--crust", type=str.lower, choices=CRUST_MODELS, default="constant", help="crustal model (default: %(default)s)"
     )
     models.add_argument(
-        "--mantle", default="Constant", help=f"mantle model: {', '.join(MODELS)} (default: %(default)s)",
+        "--mantle",
+        type=str.lower,
+        choices=MANTLE_MODELS,
+        default="constant",
+        help="mantle model (default: %(default)s)",
     )
     models.add_argument(
         "--approxg", action="store_true", help="let gravity vary with depth (default: constant 9.81 m/s^2)",
