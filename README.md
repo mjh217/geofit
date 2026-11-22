@@ -62,8 +62,8 @@ Choose with `--crust` (`Constant`, `Hasterok` or `Hoggard`) and `--mantle` (`Con
 | `Constant` | crust or mantle | none |
 | `Hasterok` | crust | k (Goes et al., 2020), with `--crust-cond` as the room-temperature value |
 | `Osako` | mantle | k (Osako et al., 2004) |
-| `Hoggard` (crust) | crust | α (Stephenson et al., 2024); k and C<sub>P</sub> (Whittington et al., 2009); ρ (Grose & Afonso, 2013) |
-| `Hoggard` (mantle) | mantle | α (Bouhifd et al., 1996); C<sub>P</sub> and lattice k (Korenaga & Korenaga, 2016); radiative k for grain size `--mantle-grain-size` (default 0.3 cm) and ρ (Grose & Afonso, 2013); pressure dependence of k (Hofmeister, 2007) |
+| `Hoggard` (crust) | crust | α(T) (Stephenson et al., 2024) with pressure dependence (Grose & Afonso, 2013); k and C<sub>P</sub> (Whittington et al., 2009); ρ (Grose & Afonso, 2013) |
+| `Hoggard` (mantle) | mantle | α(T) (Bouhifd et al., 1996) with pressure dependence (Grose & Afonso, 2013); C<sub>P</sub> and lattice k (Korenaga & Korenaga, 2016); radiative k for grain size `--mantle-grain-size` (default 0.3 cm) and ρ (Grose & Afonso, 2013); pressure dependence of k (Hofmeister, 2007) |
 
 The `Hoggard` crust and mantle models are the combinations used by Hoggard et al. (2026). [`geofit/materials.py`](geofit/materials.py) gives the underlying equations and their sources.
 

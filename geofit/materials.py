@@ -184,12 +184,18 @@ class Density:
         self.expansivity = expansivity
         self.delta_T = delta_T
 
-    def __call__(self, P, T):
+    def alpha_ratio(self, P):
+        """alpha(P, T) / alpha(T) at pressure P (Grose & Afonso, 2013, eq. 5; Hoggard et al., 2026, eq. 6)."""
         compression = self.compression(P)
-        # alpha(P, T) / alpha(T), eq. 5
-        alpha_ratio = compression * np.exp((self.delta_T + 1.0) * (1.0 / compression - 1.0))
+        return compression * np.exp((self.delta_T + 1.0) * (1.0 / compression - 1.0))
+
+    def alpha(self, P, T):
+        """Thermal expansivity alpha(P, T) [1/K]: alpha(T) of `expansivity` reduced by compression."""
+        return self.expansivity(T) * self.alpha_ratio(P)
+
+    def __call__(self, P, T):
         # rho(P) = rho0 V0/V (eq. 4), reduced by thermal expansion (eq. 6)
-        return self.rho0 * compression * (1.0 - alpha_ratio * self.expansivity.integral(T))
+        return self.rho0 * self.compression(P) * (1.0 - self.alpha_ratio(P) * self.expansivity.integral(T))
 
 
 # --------------------------------------------------------------------------
@@ -245,22 +251,23 @@ def hasterok_model(alpha, cp, rho, k0):
 def hoggard_crust_model(rho0=2.7e3):
     """Crustal model of Hoggard et al. (2026).
 
-    alpha of continental crust (Stephenson et al., 2024); diffusivity and cp of average crust
-    (Whittington et al., 2009); density (Grose & Afonso, 2013) with K0 = 90 GPa; k = kappa rho cp
-    (Hoggard et al., 2026, eq. 11).
+    alpha(T) of continental crust (Stephenson et al., 2024) with pressure dependence alpha(P, T)
+    (Hoggard et al., 2026, eq. 6); diffusivity and cp of average crust (Whittington et al., 2009);
+    density (Grose & Afonso, 2013) with K0 = 90 GPa; k = kappa rho cp (Hoggard et al., 2026, eq. 11).
     """
     rho = Density(rho0, compression_crust, ALPHA_CRUST)
 
     def k(P, T):
         return kappa_crust(T) * rho(P, T) * cp_crust(T)
 
-    return Model(lambda P, T: ALPHA_CRUST(T), lambda P, T: cp_crust(T), rho, k)
+    return Model(rho.alpha, lambda P, T: cp_crust(T), rho, k)
 
 
 def hoggard_mantle_model(rho0=3.3e3, grain_size=0.3, bulk_modulus=130e9):
     """Mantle model of Hoggard et al. (2026).
 
-    alpha of forsterite (Bouhifd et al., 1996); cp (Korenaga & Korenaga, 2016); density (Grose &
+    alpha(T) of forsterite (Bouhifd et al., 1996) with pressure dependence alpha(P, T) (Hoggard et
+    al., 2026, eq. 6), which sets the adiabat; cp (Korenaga & Korenaga, 2016); density (Grose &
     Afonso, 2013) with K0 = 130 GPa; k = kappa rho cp exp(P K'/K) + k_rad (Hoggard et al., 2026,
     eqs. 13 and 21), from the olivine lattice
     diffusivity, the pressure dependence d(ln k)/dP = K'/K with K' = 4 for hard mantle phases
@@ -274,7 +281,7 @@ def hoggard_mantle_model(rho0=3.3e3, grain_size=0.3, bulk_modulus=130e9):
     def k(P, T):
         return kappa_olivine(T) * rho(P, T) * cp_mantle(T) * np.exp(dlogk_dP * P) + radiative(T)
 
-    return Model(lambda P, T: ALPHA_FORSTERITE(T), lambda P, T: cp_mantle(T), rho, k)
+    return Model(rho.alpha, lambda P, T: cp_mantle(T), rho, k)
 
 
 # Models available for each layer

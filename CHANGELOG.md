@@ -2,6 +2,15 @@
 
 Releases use dated version numbers (`vYYYY.MM`). Each GitHub release is archived on Zenodo with its own DOI.
 
+## Unreleased
+
+- Fixed: the `Hoggard` crustal and mantle models now use the pressure-dependent thermal expansivity α(P,T)
+  (Hoggard et al., 2026, eq. 6) for the adiabat and the expansivity output column. Previously α(T) was used
+  there, and α(P,T) only entered the density. The adiabat is now cooler at depth (about 13 °C at 200 km and 29 °C
+  at 300 km for a potential temperature of 1330 °C), so thermal LAB depths are slightly shallower: under 1% for
+  lithosphere up to about 160 km thick and 2-3% at 230-285 km. The results of Hoggard et al. (2026) can be
+  reproduced with v2026.11.
+
 ## v2026.11
 
 Release accompanying Hoggard et al. (2026, *Geochemistry, Geophysics, Geosystems*). Seeded runs with the

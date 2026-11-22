@@ -1,8 +1,10 @@
 """Seeded inversions reproduce reference outputs exactly.
 
-The references in tests/data were made with the GeoFit scripts as used for Hoggard et al. (2026),
-before the code became a package, by seeding numpy's random generator (which emcee and scipy draw
-from). Short runs keep the tests quick (about a minute in all).
+The references in tests/data were made by seeding numpy's random generator (which emcee and scipy
+draw from). The "osako" reference was made with the GeoFit scripts as used for Hoggard et al. (2026),
+before the code became a package. The "paper" reference was also made with them, and so reproduced by
+v2026.11, but has since been remade for the fix to alpha(P, T) in the Hoggard models (see CHANGELOG),
+which moved only the LAB depths and geotherms. Short runs keep the tests quick (about a minute in all).
 """
 
 from pathlib import Path
@@ -16,8 +18,7 @@ from geofit.cli import main
 DATA = Path(__file__).parent / "data"
 
 RUNS = {
-    # The settings of Hoggard et al. (2026); the reference was made with the original scripts, in which
-    # the crustal model was called Whittington, with grain size 0.3 cm
+    # The settings of Hoggard et al. (2026): Hoggard crust and mantle, grain size 0.3 cm
     "paper": ["--seed", "11", "--crust", "Hoggard", "--mantle", "Hoggard", "--invertTp", "--samplepriors",
               "--priorsamples", "200"],
     # Other options: Osako mantle, data uncertainty as a parameter, no smoothing at the base

@@ -104,14 +104,31 @@ def test_models():
             make_model(name, layer, 0, 0, 0, 0)
 
 
+def alpha_PT(alpha, compression, P, T):
+    """alpha(P, T) written out as in Hoggard et al. (2026, eq. 6), with delta_T = 6."""
+    c = compression(P)
+    return alpha(T) * c * np.exp(7.0 * (1.0 / c - 1.0))
+
+
+def test_expansivity_with_pressure():
+    rho = Density(3300.0, compression_mantle, ALPHA_FORSTERITE)
+    # alpha(P, T) is alpha(T) at the surface and falls with pressure, by about a quarter at 6 GPa
+    assert rho.alpha(0.0, 1500.0) == pytest.approx(ALPHA_FORSTERITE(1500.0), rel=1e-3)
+    assert rho.alpha(6e9, 1500.0) / ALPHA_FORSTERITE(1500.0) == pytest.approx(0.78, abs=0.01)
+    P = np.linspace(0.0, 10e9, 11)
+    assert np.all(np.diff(rho.alpha(P, 1500.0)) < 0.0)
+
+
 def test_hoggard_models_combine_the_parameterisations():
     P, T = 3e9, 1200.0
     mantle = make_model("hoggard", "mantle", 0, 0, 3300.0, 0)
     rho = Density(3300.0, compression_mantle, ALPHA_FORSTERITE)(P, T)
     k = kappa_olivine(T) * rho * cp_mantle(T) * np.exp(4.0 / 130e9 * P) + RadiativeConductivity(0.3)(T)
-    assert mantle.compute(0.0, P, T) == pytest.approx((ALPHA_FORSTERITE(T), cp_mantle(T), rho, k))
+    alpha = alpha_PT(ALPHA_FORSTERITE, compression_mantle, P, T)
+    assert mantle.compute(0.0, P, T) == pytest.approx((alpha, cp_mantle(T), rho, k))
 
     crust = make_model("hoggard", "crust", 0, 0, 2700.0, 0)
     rho = Density(2700.0, compression_crust, ALPHA_CRUST)(P / 3, T)
     k = kappa_crust(T) * rho * cp_crust(T)
-    assert crust.compute(0.0, P / 3, T) == pytest.approx((ALPHA_CRUST(T), cp_crust(T), rho, k))
+    alpha = alpha_PT(ALPHA_CRUST, compression_crust, P / 3, T)
+    assert crust.compute(0.0, P / 3, T) == pytest.approx((alpha, cp_crust(T), rho, k))
