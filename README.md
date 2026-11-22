@@ -50,6 +50,9 @@ The input is a CSV with a header row, temperature (°C) in the first column and 
 - `<name>_posterior.csv`: posterior samples (every 5th step of each walker), with their log-probability, parameters and LAB depth (km).
 - `<name>_geotherm.npz`: the geotherm of each posterior sample, as a table of depth, pressure, temperature, adiabatic temperature and thermal properties. Read with `np.load(path, allow_pickle=True)["geotherm"]`.
 - `<name>_geotherms/geotherm_<i>.csv` (optional, select with `--iwrite`): each geotherm is output in its own CSV (N.B., produces many output files).
+- `<name>_adiabat_margin.csv` (optional, with `--adiabat-margin`): the input P-T data, the adiabatic temperature at each pressure, and whether each datum was discarded.
+
+P-T data close to the adiabat may record heating or crystallisation in the ascending host melt rather than the conductive geotherm (Hoggard et al., 2026). `--adiabat-margin XT` discards any datum within XT °C of the adiabat, or hotter than it, before fitting. So that every model is fitted to the same data, the adiabat used is fixed: that of the prior mean potential temperature `--tpmean` with `--invertTp`, otherwise of `--Tp`.
 
 Surface heat flux, crustal thickness and crustal heat production are always inverted for. `--invertTp`, `--invertHmantle` and `--hierarchical` add the mantle potential temperature, lithospheric mantle heat production, and uncertainty on the data pressures (otherwise fixed by `--Tp`, `--Hmantle` and `--sigma`). `geofit -h` lists the options, including the priors, the thermal property parameterisations available, and the MCMC settings. `--seed` allows for making a run reproducible.
 

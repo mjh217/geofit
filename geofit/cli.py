@@ -108,6 +108,14 @@ def inversion_parser():
     parser.add_argument("--seed", type=int, help="random seed, for reproducible runs")
     parser.add_argument("--samplepriors", action="store_true", help="also write random samples of the priors")
     parser.add_argument("--iwrite", action="store_true", help="also write every sampled geotherm to its own CSV file")
+    parser.add_argument(
+        "--adiabat-margin",
+        type=float,
+        metavar="XT",
+        help="discard P-T data within XT [C] of the adiabat, or hotter than it. The adiabat is that of the "
+        "potential temperature --tpmean with --invertTp, otherwise --Tp, so that every model is fitted to the "
+        "same data (default: keep all data)",
+    )
     add_model_options(parser)
     fixed = parser.add_argument_group("fixed values of parameters that can be inverted for")
     add_mantle_options(fixed, note=", unless --invertTp/--invertHmantle")
@@ -239,10 +247,39 @@ def unpack(sample, args):
     return shf, z_crust * 1e3, h_crust, h_mantle, tp
 
 
+def near_adiabat(args, mantle_model, g, P_data, T_data):
+    """Which data are within --adiabat-margin of the adiabat.
+
+    The adiabat is that of the prior mean potential temperature (--tpmean) when Tp is inverted for,
+    otherwise of the fixed --Tp. Returns a boolean array (True = discard) and a table of the data
+    with that adiabat's temperature.
+    """
+    tp = args.tpmean if args.invertTp else args.Tp
+    adiabat = forward.compute_adiabat(mantle_model, g, tp, d.P_SURFACE, d.Z_MAX_ADIABAT)
+    T_adiabat = adiabat.T(P_data)
+    discard = T_data > T_adiabat - args.adiabat_margin
+    table = pd.DataFrame(
+        {
+            "Temperature (Celsius)": T_data - d.C2K,
+            "Pressure (GPa)": P_data / 1e9,
+            f"Adiabatic temperature for Tp = {tp - d.C2K:g} C (Celsius)": T_adiabat - d.C2K,
+            "Discarded": discard,
+        }
+    )
+    return discard, table
+
+
 def invert(argv):
-    args = inversion_parser().parse_args(argv)
+    parser = inversion_parser()
+    args = parser.parse_args(argv)
+    if args.adiabat_margin is not None and args.adiabat_margin < 0.0:
+        parser.error("--adiabat-margin must not be negative")
     if args.seed is not None:
         np.random.seed(args.seed)
+
+    out = Path(args.output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    stem = Path(args.input).stem
 
     # Data: temperature [C] and pressure [GPa]
     data = np.atleast_2d(np.loadtxt(args.input, delimiter=",", skiprows=1, usecols=[0, 1]))
@@ -250,6 +287,15 @@ def invert(argv):
     T_data = data[:, 0] + d.C2K
 
     crust_model, mantle_model, g = build_models(args)
+
+    if args.adiabat_margin is not None:
+        discard, table = near_adiabat(args, mantle_model, g, P_data, T_data)
+        table.to_csv(out / f"{stem}_adiabat_margin.csv")
+        print(f"Discarding {discard.sum()} of {discard.size} P-T data within {args.adiabat_margin:g} C of the adiabat.")
+        if discard.all():
+            sys.exit("No P-T data left to fit: reduce --adiabat-margin")
+        P_data, T_data = P_data[~discard], T_data[~discard]
+
     adiabat = forward.compute_adiabat(mantle_model, g, args.Tp, d.P_SURFACE, d.Z_MAX_ADIABAT)
 
     priors = build_priors(args)
@@ -273,9 +319,6 @@ def invert(argv):
     samples = sampler.get_chain(discard=0, thin=5, flat=True)
     log_prob, _ = sampler.compute_log_prob(samples)
 
-    out = Path(args.output_dir)
-    out.mkdir(parents=True, exist_ok=True)
-    stem = Path(args.input).stem
     columns = parameter_columns(args)
     names = [name for name, _ in columns]
 

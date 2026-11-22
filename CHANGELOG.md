@@ -4,6 +4,10 @@ Releases use dated version numbers (`vYYYY.MM`). Each GitHub release is archived
 
 ## Unreleased
 
+- New option `--adiabat-margin XT` discards P-T data within XT °C of the adiabat (or hotter than it) before
+  fitting, using the adiabat of the prior mean potential temperature (`--tpmean` with `--invertTp`, otherwise
+  `--Tp`) so that every model is fitted to the same data. The data, with the adiabatic temperature and whether each was discarded, are written to
+  `<name>_adiabat_margin.csv`.
 - Fixed: the `Hoggard` crustal and mantle models now use the pressure-dependent thermal expansivity α(P,T)
   (Hoggard et al., 2026, eq. 6) for the adiabat and the expansivity output column. Previously α(T) was used
   there, and α(P,T) only entered the density. The adiabat is now cooler at depth (about 13 °C at 200 km and 29 °C
